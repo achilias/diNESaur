@@ -1,7 +1,8 @@
 #ifndef CPU_H
 #define CPU_H
 
-class cpu {
+class Cpu {
+public:
 
 };
 

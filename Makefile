@@ -7,7 +7,7 @@ obj/%.o: src/%.cpp
 	$(MAKE) dirs
 	$(CXX) $(CXXFLAGS) -c $^ -o $@
 
-.PHONY: dirs clean
+.PHONY: dirs clean lint
 
 dirs:
 	mkdir -p obj bin
@@ -17,3 +17,6 @@ build: $(patsubst src/%.cpp, obj/%.o ,$(wildcard src/*.cpp))
 
 clean:
 	rm -rf obj bin
+
+lint:
+	clang-tidy src/*.cpp -- I./include

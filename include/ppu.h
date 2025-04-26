@@ -1,9 +1,9 @@
 #ifndef PPU_H
 #define PPU_H
 
-class Ppu {
+class PPU {
 public:
-    Ppu();
+    PPU();
 };
 
 #endif

@@ -19,4 +19,4 @@ clean:
 	rm -rf obj bin
 
 lint:
-	clang-tidy src/*.cpp -- I./include
+	clang-tidy src/*.cpp -- -I./include

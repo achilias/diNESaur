@@ -5,7 +5,8 @@
 
 class CPU {
 public:
-    CPU() : mem(65535), sp(0x1ff) {};
+    CPU() : mem(65536), sp(0x1ff) {};
+    size_t run();
 private:
     Memory mem;
     uint16_t pc;
@@ -14,6 +15,10 @@ private:
     uint8_t y;
     uint8_t sp;
     uint8_t sr;
+
+    size_t execute_instr();
+
+
 };
 
 #endif

@@ -8,6 +8,54 @@ uint16_t CPUMem::mirror(uint16_t addr) const {
     return addr;
 };
 
+uint16_t CPU::mem_fetch(AddressingMode mode) {
+	switch (mode) {
+		uint16_t tmp_u16;
+
+		// used for zero page & indirect addressing to utilize default unsigned wraparound overflow behavior
+		uint8_t tmp_u8;
+
+		case AddressingMode::immediate:
+			return mem.read_byte(pc++);
+		case AddressingMode::indirect:
+		case AddressingMode::absolute:
+			tmp_u16 = mem.read_two_bytes(pc);
+			pc += 2;
+			return mem.read_byte(tmp_u16);
+		case AddressingMode::absolute_idx_x:
+			tmp_u16 = reg_x + mem.read_two_bytes(pc);
+			pc += 2;
+			return mem.read_byte(tmp_u16);
+		case AddressingMode::absolute_idx_y:
+			tmp_u16 = reg_y + mem.read_two_bytes(pc);
+			pc += 2;
+			return mem.read_byte(tmp_u16);
+		case AddressingMode::zero_page:
+			tmp_u8 = mem.read_byte(pc++);
+			return mem.read_byte(tmp_u8);
+		case AddressingMode::zero_page_idx_x:
+			tmp_u8 = reg_x + mem.read_byte(pc++);
+			return mem.read_byte(tmp_u8);
+		case AddressingMode::zero_page_idx_y:
+			tmp_u8 = reg_y + mem.read_byte(pc++);
+			return mem.read_byte(tmp_u8);
+		case AddressingMode::indirect_idx_x:
+			tmp_u8 = reg_x + mem.read_byte(pc++);
+			tmp_u16 = mem.read_byte(tmp_u8);
+			tmp_u8 = reg_x + mem.read_byte(tmp_u8 + 1);
+			tmp_u16 += mem.read_byte(tmp_u8) << 8;
+			return mem.read_byte(tmp_u16);
+		case AddressingMode::indirect_idx_y:
+			tmp_u8 = mem.read_byte(pc++);
+			tmp_u16 = mem.read_byte(tmp_u8);
+			tmp_u8 = mem.read_byte(++tmp_u8);
+			tmp_u16 += reg_y + mem.read_byte(tmp_u8) << 8;
+			return mem.read_byte(tmp_u16);
+
+	};
+
+};
+
 size_t CPU::execute_instr() {
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;

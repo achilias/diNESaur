@@ -11,17 +11,19 @@ public:
 
 class CPU {
 public:
-    CPU() : mem(65536), sp(0xff), pc(0), accum(0), x(0), y(0), sr(0) {};
+    CPU() : mem(65536), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
     size_t execute_instr();
 protected: // TODO: derived class for unit testing will be implemented, needs to access memory and registers
     static const uint16_t stack_base = 0x1ff;
     CPUMem mem;
     uint16_t pc;
     uint8_t accum;
-    uint8_t x;
-    uint8_t y;
+    uint8_t reg_x;
+    uint8_t reg_y;
     uint8_t sp;
     uint8_t sr;
+
+	uint16_t mem_fetch(AddressingMode mode);
 
 private:
     bool adc(AddressingMode addr_mode);

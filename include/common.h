@@ -5,6 +5,7 @@
 #include <vector>
 
 enum class AddressingMode {
+    accumulator,
     immediate,
     zero_page,
     zero_page_idx_x,

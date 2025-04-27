@@ -1,5 +1,13 @@
 #include "cpu.h"
 
+uint16_t CPUMem::mirror(uint16_t addr) const {
+    if (in_range(addr, 0x0, 0x1fff))
+        return addr & 0x7ff;
+    if (in_range(addr, 0x2000, 0x3fff))
+        return addr & 0x2007;
+    return addr;
+};
+
 size_t CPU::execute_instr() {
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;

@@ -3,13 +3,19 @@
 
 #include "memory.h"
 
+class CPUMem : public Memory {
+public:
+	CPUMem(size_t mem_size) : Memory(mem_size) {};
+	uint16_t mirror (uint16_t addr) const;
+};
+
 class CPU {
 public:
     CPU() : mem(65536), sp(0xff), pc(0), accum(0), x(0), y(0), sr(0) {};
     size_t execute_instr();
 protected: // TODO: derived class for unit testing will be implemented, needs to access memory and registers
     static const uint16_t stack_base = 0x1ff;
-    Memory mem;
+    CPUMem mem;
     uint16_t pc;
     uint8_t accum;
     uint8_t x;

@@ -6,7 +6,7 @@ uint16_t CPUMem::mirror(uint16_t addr) const {
     if (in_range(addr, 0x2000, 0x3fff))
         return addr & 0x2007;
     return addr;
-};
+}
 
 uint16_t CPU::mem_fetch(AddressingMode mode) {
 	switch (mode) {
@@ -51,10 +51,8 @@ uint16_t CPU::mem_fetch(AddressingMode mode) {
 			tmp_u8 = mem.read_byte(++tmp_u8);
 			tmp_u16 += reg_y + mem.read_byte(tmp_u8) << 8;
 			return mem.read_byte(tmp_u16);
-
-	};
-
-};
+	}
+}
 
 size_t CPU::execute_instr() {
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
@@ -513,225 +511,224 @@ size_t CPU::execute_instr() {
             tya();
             return 2;
     }
-
-};
+}
 
 bool CPU::adc(AddressingMode addr_mode) {
 
-};
+}
 
 bool CPU::and_(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::asl(AddressingMode addr_mode){
 
-};
+}
 
 void CPU::bcc() {
 
-};
+}
 
 void CPU::bcs() {
 
-};
+}
 
 void CPU::beq() {
 
-};
+}
 
 void CPU::bit(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::bmi() {
 
-};
+}
 
 void CPU::bne() {
 
-};
+}
 
 void CPU::bpl() {
 
-};
+}
 
 void CPU::brk() {
 
-};
+}
 
 void CPU::bvc() {
 
-};
+}
 
 void CPU::bvs() {
 
-};
+}
 
 void CPU::clc() {
 
-};
+}
 
 void CPU::cld() {
 
-};
+}
 
 void CPU::cli() {
 
-};
+}
 
 void CPU::clv() {
 
-};
+}
 
 void CPU::cmp(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::cpx(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::cpy(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::dec(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::dex() {
 
-};
+}
 
 void CPU::dey() {
 
-};
+}
 
 void CPU::eor(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::inc(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::inx() {
 
-};
+}
 
 void CPU::iny() {
 
-};
+}
 
 void CPU::jmp(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::jsr() {
 
-};
+}
 
 void CPU::lda(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::ldx(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::ldy(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::lsr(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::ora(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::pha() {
 
-};
+}
 
 void CPU::php() {
 
-};
+}
 
 void CPU::pla() {
 
-};
+}
 
 void CPU::plp() {
 
-};
+}
 
 void CPU::rol(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::ror(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::rti() {
 
-};
+}
 
 void CPU::rts() {
 
-};
+}
 
 void CPU::sbc(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::sec() {
 
-};
+}
 
 void CPU::sed() {
 
-};
+}
 
 void CPU::sei() {
 
-};
+}
 
 void CPU::sta(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::stx(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::sty(AddressingMode addr_mode) {
 
-};
+}
 
 void CPU::tax() {
 
-};
+}
 
 void CPU::tay() {
 
-};
+}
 
 void CPU::tsx() {
 
-};
+}
 
 void CPU::txa() {
 
-};
+}
 
 void CPU::txs() {
 
-};
+}
 
 void CPU::tya() {
 
-};
+}

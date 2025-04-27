@@ -1,18 +1,470 @@
 #include "cpu.h"
 
 size_t CPU::execute_instr() {
+    // TODO: Implement checks to set these flags and return correct number of cpu cycles
+    bool pg_cross = false, branch_taken = false, new_page = false;
     switch (uint8_t opcode = mem.read_byte(pc++); opcode) {
-        case 0x00:
-            break;
+        case 0x69:
+            adc(AddressingMode::immediate);
+            return 2;
+        case 0x65:
+            adc(AddressingMode::zero_page);
+            return 3;
+        case 0x75:
+            adc(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0x6d:
+            adc(AddressingMode::absolute);
+            return 4;
+        case 0x7d:
+            // TODO: implement check for page crossing
+            pg_cross = adc(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0x79:
+            pg_cross = adc(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0x61:
+            adc(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0x71:
+            pg_cross = adc(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0x29:
+            and_(AddressingMode::immediate);
+            return 2;
+        case 0x25:
+            and_(AddressingMode::zero_page);
+            return 3;
+        case 0x35:
+            and_(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0x2d:
+            and_(AddressingMode::absolute);
+            return 4;
+        case 0x3d:
+            pg_cross = and_(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0x39:
+            pg_cross = and_(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0x21:
+            and_(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0x31:
+            and_(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0xa:
+            asl(AddressingMode::accumulator);
+            return 2;
+        case 0x6:
+            asl(AddressingMode::zero_page);
+            return 5;
+        case 0x16:
+            asl(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0xe:
+            asl(AddressingMode::absolute);
+            return 6;
+        case 0x1e:
+            asl(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0x90:
+            bcc();
+            return 2 + branch_taken + new_page;
+        case 0xb0:
+            bcs();
+            return 2 + branch_taken + new_page;
+        case 0xf0:
+            beq();
+            return 2 + branch_taken + new_page;
+        case 0x24:
+            bit(AddressingMode::zero_page);
+            return 3;
+        case 0x2c:
+            bit(AddressingMode::absolute);
+            return 4;
+        case 0x30:
+            bmi();
+            return 2 + branch_taken + new_page;
+        case 0xd0:
+            bne();
+            return 2 + branch_taken + new_page;
+        case 0x10:
+            bpl();
+            return 2 + branch_taken + new_page;
+        case 0x00: // BRK
+            return 7;
+        case 0x50:
+            bvc();
+            return 2 + branch_taken + new_page;
+        case 0x70:
+            bvs();
+            return 2 + branch_taken + new_page;
+        case 0x18:
+            clc();
+            return 2;
+        case 0xd8:
+            cld();
+            return 2;
+        case 0x58:
+            cli();
+            return 2;
+        case 0xb8:
+            clv();
+            return 2;
+        case 0xc9:
+            cmp(AddressingMode::immediate);
+            return 2;
+        case 0xc5:
+            cmp(AddressingMode::zero_page);
+            return 3;
+        case 0xd5:
+            cmp(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0xcd:
+            cmp(AddressingMode::absolute);
+            return 4;
+        case 0xdd:
+            cmp(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0xd9:
+            cmp(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0xc1:
+            cmp(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0xd1:
+            cmp(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0xe0:
+            cpx(AddressingMode::immediate);
+            return 2;
+        case 0xe4:
+            cpx(AddressingMode::zero_page);
+            return 3;
+        case 0xec:
+            cpx(AddressingMode::absolute);
+            return 4;
+        case 0xc0:
+            cpy(AddressingMode::immediate);
+            return 2;
+        case 0xc4:
+            cpy(AddressingMode::zero_page);
+            return 3;
+        case 0xcc:
+            cpy(AddressingMode::absolute);
+            return 4;
+        case 0xc6:
+            dec(AddressingMode::zero_page);
+            return 5;
+        case 0xd6:
+            dec(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0xce:
+            dec(AddressingMode::absolute);
+            return 6;
+        case 0xde:
+            dec(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0xca:
+            dex();
+            return 2;
+        case 0x88:
+            dey();
+            return 2;
+        case 0x49:
+            eor(AddressingMode::immediate);
+            return 2;
+        case 0x45:
+            eor(AddressingMode::zero_page);
+            return 3;
+        case 0x55:
+            eor(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0x4d:
+            eor(AddressingMode::absolute);
+            return 4;
+        case 0x5d:
+            eor(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0x59:
+            eor(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0x41:
+            eor(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0x51:
+            eor(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0xe6:
+            inc(AddressingMode::zero_page);
+            return 5;
+        case 0xf6:
+            inc(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0xee:
+            inc(AddressingMode::absolute);
+            return 6;
+        case 0xfe:
+            inc(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0xe8:
+            inx();
+            return 2;
+        case 0xc8:
+            iny();
+            return 2;
+        case 0x4c:
+            jmp(AddressingMode::absolute);
+            return 3;
+        case 0x6c:
+            jmp(AddressingMode::indirect);
+            return 5;
+        case 0x20:
+            jsr();
+            return 6;
+        case 0xa9:
+            lda(AddressingMode::immediate);
+            return 2;
+        case 0xa5:
+            lda(AddressingMode::zero_page);
+            return 3;
+        case 0xb5:
+            lda(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0xad:
+            lda(AddressingMode::absolute);
+            return 4;
+        case 0xbd:
+            lda(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0xb9:
+            lda(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0xa1:
+            lda(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0xb1:
+            lda(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0xa2:
+            ldx(AddressingMode::immediate);
+            return 2;
+        case 0xa6:
+            ldx(AddressingMode::zero_page);
+            return 3;
+        case 0xb6:
+            ldx(AddressingMode::zero_page_idx_y);
+            return 4;
+        case 0xae:
+            ldx(AddressingMode::absolute);
+            return 4;
+        case 0xbe:
+            ldx(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0xa0:
+            ldy(AddressingMode::immediate);
+            return 2;
+        case 0xa4:
+            ldy(AddressingMode::zero_page);
+            return 3;
+        case 0xb4:
+            ldy(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0xac:
+            ldy(AddressingMode::absolute);
+            return 4;
+        case 0xbc:
+            ldy(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0x4a:
+            lsr(AddressingMode::accumulator);
+            return 2;
+        case 0x46:
+            lsr(AddressingMode::zero_page);
+            return 5;
+        case 0x56:
+            lsr(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0x4e:
+            lsr(AddressingMode::absolute);
+            return 6;
+        case 0x5e:
+            lsr(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0xea: // NOP
+            return 2;
+        case 0x9:
+            ora(AddressingMode::immediate);
+            return 2;
+        case 0x5:
+            ora(AddressingMode::zero_page);
+            return 3;
+        case 0x15:
+            ora(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0xd:
+            ora(AddressingMode::absolute);
+            return 4;
+        case 0x1d:
+            ora(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0x19:
+            ora(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0x1:
+            ora(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0x11:
+            ora(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0x48:
+            pha();
+            return 3;
+        case 0x8:
+            php();
+            return 3;
+        case 0x68:
+            pla();
+            return 4;
+        case 0x28:
+            plp();
+            return 4;
+        case 0x2a:
+            rol(AddressingMode::accumulator);
+            return 2;
+        case 0x26:
+            rol(AddressingMode::zero_page);
+            return 5;
+        case 0x36:
+            rol(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0x2e:
+            rol(AddressingMode::absolute);
+            return 6;
+        case 0x3e:
+            rol(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0x6a:
+            ror(AddressingMode::accumulator);
+            return 2;
+        case 0x66:
+            ror(AddressingMode::zero_page);
+            return 5;
+        case 0x76:
+            ror(AddressingMode::zero_page_idx_x);
+            return 6;
+        case 0x6e:
+            ror(AddressingMode::absolute);
+            return 6;
+        case 0x7e:
+            ror(AddressingMode::absolute_idx_x);
+            return 7;
+        case 0x40:
+            rti();
+            return 6;
+        case 0x60:
+            rts();
+            return 6;
+        case 0xe9:
+            sbc(AddressingMode::immediate);
+            return 2;
+        case 0xe5:
+            sbc(AddressingMode::zero_page);
+            return 3;
+        case 0xf5:
+            sbc(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0xed:
+            sbc(AddressingMode::absolute);
+            return 4;
+        case 0xfd:
+            sbc(AddressingMode::absolute_idx_x);
+            return 4 + pg_cross;
+        case 0xf9:
+            sbc(AddressingMode::absolute_idx_y);
+            return 4 + pg_cross;
+        case 0xe1:
+            sbc(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0xf1:
+            sbc(AddressingMode::indirect_idx_y);
+            return 5 + pg_cross;
+        case 0x38:
+            sec();
+            return 2;
+        case 0xf8:
+            sed();
+            return 2;
+        case 0x78:
+            sei();
+            return 2;
+        case 0x85:
+            sta(AddressingMode::zero_page);
+            return 3;
+        case 0x95:
+            sta(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0x8d:
+            sta(AddressingMode::absolute);
+            return 4;
+        case 0x9d:
+            sta(AddressingMode::absolute_idx_x);
+            return 5;
+        case 0x99:
+            sta(AddressingMode::absolute_idx_y);
+            return 5;
+        case 0x81:
+            sta(AddressingMode::indirect_idx_x);
+            return 6;
+        case 0x91:
+            sta(AddressingMode::indirect_idx_y);
+            return 6;
+        case 0x86:
+            stx(AddressingMode::zero_page);
+            return 3;
+        case 0x96:
+            stx(AddressingMode::zero_page_idx_y);
+            return 4;
+        case 0x8e:
+            stx(AddressingMode::absolute);
+            return 4;
+        case 0x84:
+            sty(AddressingMode::zero_page);
+            return 3;
+        case 0x94:
+            sty(AddressingMode::zero_page_idx_x);
+            return 4;
+        case 0x8c:
+            sty(AddressingMode::absolute);
+            return 4;
+        case 0xaa:
+            tax();
+            return 2;
+        case 0xa8:
+            tay();
+            return 2;
+        case 0xba:
+            tsx();
+            return 2;
+        case 0x8a:
+            txa();
+            return 2;
+        case 0x9a:
+            txs();
+            return 2;
+        case 0x98:
+            tya();
+            return 2;
     }
 
 };
 
-void CPU::adc(AddressingMode addr_mode) {
+bool CPU::adc(AddressingMode addr_mode) {
 
 };
 
-void CPU::and_(AddressingMode addr_mode) {
+bool CPU::and_(AddressingMode addr_mode) {
 
 };
 
@@ -224,6 +676,6 @@ void CPU::txs() {
 
 };
 
-void tya() {
+void CPU::tya() {
 
 };

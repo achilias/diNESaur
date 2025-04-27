@@ -6,9 +6,8 @@
 class CPU {
 public:
     CPU() : mem(65536), sp(0xff), pc(0), accum(0), x(0), y(0), sr(0) {};
-    size_t run();
-private:
-
+    size_t execute_instr();
+protected: // TODO: derived class for unit testing will be implemented, needs to access memory and registers
     static const uint16_t stack_base = 0x1ff;
     Memory mem;
     uint16_t pc;
@@ -18,10 +17,9 @@ private:
     uint8_t sp;
     uint8_t sr;
 
-    size_t execute_instr();
-
-    void adc(AddressingMode addr_mode);
-    void and_(AddressingMode addr_mode);
+private:
+    bool adc(AddressingMode addr_mode);
+    bool and_(AddressingMode addr_mode);
     void asl(AddressingMode addr_mode);
     void bcc();
     void bcs();

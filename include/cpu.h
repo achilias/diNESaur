@@ -5,15 +5,16 @@
 
 class CPUMem : public Memory {
 public:
-	CPUMem(size_t mem_size) : Memory(mem_size) {};
+	CPUMem(size_t mem_size, bool enable_mirroring) : Memory(mem_size), enable_mirroring(enable_mirroring) {};
 	uint16_t mirror (uint16_t addr) const;
+    bool enable_mirroring;
 };
 
 class CPU {
 public:
-    CPU() : mem(65536), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
+    CPU(bool enable_mirroring) : mem(65536, enable_mirroring), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
     size_t execute_instr();
-protected: // TODO: derived class for unit testing will be implemented, needs to access memory and registers
+protected:
     static const uint16_t stack_base = 0x1ff;
     CPUMem mem;
     uint16_t pc;

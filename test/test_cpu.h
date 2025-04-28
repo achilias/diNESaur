@@ -5,7 +5,7 @@
 
 class TestCPU : public CPU {
 public:
-    TestCPU() {};
+    TestCPU() : CPU(false) {};
 
 };
 

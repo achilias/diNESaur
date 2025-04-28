@@ -1,6 +1,8 @@
 #include "cpu.h"
 
 uint16_t CPUMem::mirror(uint16_t addr) const {
+    if (!enable_mirroring)
+        return addr;
     if (in_range(addr, 0x0, 0x1fff))
         return addr & 0x7ff;
     if (in_range(addr, 0x2000, 0x3fff))

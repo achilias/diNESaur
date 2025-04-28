@@ -37,17 +37,20 @@ void TestCPU::test_opcode(std::string opcode) {
     json data = json::parse(f);
     for(auto test_case = data.begin(); test_case != data.end(); test_case++) {
         auto init = (*test_case)["initial"];
-        set_state(init["pc"], init["p"], init["a"], init["x"], init["y"], init["s"]);
+        set_state(init["pc"], init["s"], init["a"], init["x"], init["y"], init["p"]);
         mem_locs_set(init["ram"]);
 
+        execute_instr();
+
         auto final = (*test_case)["final"];
-        test_state(final["pc"], final["p"], final["a"], final["x"], final["y"], final["s"]);
+        test_state(final["pc"], final["s"], final["a"], final["x"], final["y"], final["p"]);
         mem_locs_test(final["ram"]);
 
         std::cout << (*test_case)["name"] << std::endl;
     }
 }
 
-TEST(CPU_Tests, dummy) {
+TEST(CPU_Tests, opcode_0a) {
     TestCPU cpu;
+    cpu.test_opcode("0a");
 }

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include "test_cpu.h"
+#include "macros.h"
 
 using json = nlohmann::json;
 
@@ -33,7 +34,7 @@ void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, 
 };
 
 void TestCPU::test_opcode(std::string opcode) {
-    std::ifstream f("../test/json/" + opcode + "_test.json");
+    std::ifstream f("../test/json_tests/" + opcode + "_test.json");
     json data = json::parse(f);
     for(auto test_case = data.begin(); test_case != data.end(); test_case++) {
         auto init = (*test_case)["initial"];
@@ -48,9 +49,4 @@ void TestCPU::test_opcode(std::string opcode) {
 
         std::cout << (*test_case)["name"] << std::endl;
     }
-}
-
-TEST(CPU_Tests, opcode_0a) {
-    TestCPU cpu;
-    cpu.test_opcode("0a");
 }

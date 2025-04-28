@@ -17,14 +17,19 @@ public:
 protected:
     static const uint16_t stack_base = 0x1ff;
     CPUMem mem;
+    uint8_t sp;
     uint16_t pc;
     uint8_t accum;
     uint8_t reg_x;
     uint8_t reg_y;
-    uint8_t sp;
     uint8_t sr;
 
 	uint16_t mem_fetch(AddressingMode mode);
+    void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
+    void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
+    void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
+    void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
+    void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
 
 private:
     bool adc(AddressingMode addr_mode);

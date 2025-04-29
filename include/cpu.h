@@ -16,7 +16,7 @@ public:
     CPU(bool enable_mirroring) : mem(65536, enable_mirroring), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
     size_t execute_instr();
 protected:
-    static const uint16_t stack_base = 0x1ff;
+    static const uint16_t stack_base = 0x100;
     CPUMem mem;
     uint8_t sp;
     uint16_t pc;
@@ -32,6 +32,8 @@ protected:
 	bool get_zero() const {return sr & 0x2;}
     void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
     void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
+	void set_decimal(bool cond) {sr = cond ? sr | 0x8 : sr & ~0x8;}
+	bool get_decimal() {return sr & 0x8;}
 	bool get_overflow() const {return sr & 0x40;}
     void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
 	bool get_negative() const {return sr & 0x80;}

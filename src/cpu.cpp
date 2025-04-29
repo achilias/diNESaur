@@ -523,7 +523,19 @@ bool CPU::and_(AddressingMode addr_mode) {
 }
 
 void CPU::asl(AddressingMode addr_mode){
-
+	if (addr_mode == AddressingMode::accumulator) {
+		set_carry(accum & 0x80);
+		accum = accum << 1;
+		set_zero(accum == 0);
+		set_negative(accum & 0x80);
+		return;
+	}
+    auto mem_loc = mem_fetch(addr_mode);
+    set_carry(get<1>(mem_loc) & 0x80);
+    uint8_t tmp = get<1>(mem_loc) << 1;
+	mem.write_byte(get<0>(mem_loc), tmp);
+    set_zero(tmp == 0);
+    set_negative(tmp & 0x80);
 }
 
 void CPU::bcc() {

@@ -43,15 +43,13 @@ auto CPU::mem_fetch(AddressingMode mode) -> std::tuple<uint16_t, uint8_t> {
 			return {tmp_u8, mem.read_byte(tmp_u8)};
 		case AddressingMode::indirect_idx_x:
 			tmp_u8 = reg_x + mem.read_byte(pc++);
-			tmp_u16 = mem.read_byte(tmp_u8);
-			tmp_u8 = reg_x + mem.read_byte(tmp_u8 + 1);
+			tmp_u16 = mem.read_byte(tmp_u8++);
 			tmp_u16 += mem.read_byte(tmp_u8) << 8;
 			return {tmp_u16, mem.read_byte(tmp_u16)};
 		case AddressingMode::indirect_idx_y:
 			tmp_u8 = mem.read_byte(pc++);
-			tmp_u16 = mem.read_byte(tmp_u8);
-			tmp_u8 = mem.read_byte(++tmp_u8);
-			tmp_u16 += reg_y + mem.read_byte(tmp_u8) << 8;
+			tmp_u16 = mem.read_byte(tmp_u8++);
+			tmp_u16 += (mem.read_byte(tmp_u8) << 8) + reg_y;
 			return {tmp_u16, mem.read_byte(tmp_u16)};
 	}
 }

@@ -25,7 +25,7 @@ protected:
     uint8_t reg_y;
     uint8_t sr;
 
-	auto mem_fetch(AddressingMode mode) -> std::tuple<uint16_t, uint8_t>;
+	uint16_t get_addr(AddressingMode mode);
     void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
     bool get_carry() const {return sr & 0x1;}
     void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}

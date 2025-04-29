@@ -11,47 +11,335 @@ uint16_t CPUMem::mirror(uint16_t addr) const {
     return addr;
 }
 
-auto CPU::mem_fetch(AddressingMode mode) -> std::tuple<uint16_t, uint8_t> {
+uint16_t CPU::get_addr(AddressingMode mode) {
 	switch (mode) {
 		uint16_t tmp_u16;
 
 		// used for zero page & indirect addressing to utilize default unsigned wraparound overflow behavior
 		uint8_t tmp_u8;
 		case AddressingMode::immediate:
-			return {0, mem.read_byte(pc++)};
+			return pc++;
 		case AddressingMode::indirect:
 		case AddressingMode::absolute:
 			tmp_u16 = mem.read_two_bytes(pc);
 			pc += 2;
-			return {tmp_u16, mem.read_byte(tmp_u16)};
+			return tmp_u16;
 		case AddressingMode::absolute_idx_x:
 			tmp_u16 = reg_x + mem.read_two_bytes(pc);
 			pc += 2;
-			return {tmp_u16, mem.read_byte(tmp_u16)};
+			return tmp_u16;
 		case AddressingMode::absolute_idx_y:
 			tmp_u16 = reg_y + mem.read_two_bytes(pc);
 			pc += 2;
-			return {tmp_u16, mem.read_byte(tmp_u16)};
+			return tmp_u16;
 		case AddressingMode::zero_page:
-			tmp_u8 = mem.read_byte(pc++);
-			return {tmp_u8, mem.read_byte(tmp_u8)};
+			return mem.read_byte(pc++);
 		case AddressingMode::zero_page_idx_x:
 			tmp_u8 = reg_x + mem.read_byte(pc++);
-			return {tmp_u8, mem.read_byte(tmp_u8)};
+			return tmp_u8;
 		case AddressingMode::zero_page_idx_y:
 			tmp_u8 = reg_y + mem.read_byte(pc++);
-			return {tmp_u8, mem.read_byte(tmp_u8)};
+			return tmp_u8;
 		case AddressingMode::indirect_idx_x:
 			tmp_u8 = reg_x + mem.read_byte(pc++);
 			tmp_u16 = mem.read_byte(tmp_u8++);
 			tmp_u16 += mem.read_byte(tmp_u8) << 8;
-			return {tmp_u16, mem.read_byte(tmp_u16)};
+			return tmp_u16;
 		case AddressingMode::indirect_idx_y:
 			tmp_u8 = mem.read_byte(pc++);
 			tmp_u16 = mem.read_byte(tmp_u8++);
 			tmp_u16 += (mem.read_byte(tmp_u8) << 8) + reg_y;
-			return {tmp_u16, mem.read_byte(tmp_u16)};
+			return tmp_u16;
 	}
+}
+
+bool CPU::adc(AddressingMode addr_mode) {
+	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+
+	uint16_t result = accum + operand + get_carry();
+	set_carry(result > 0xff);
+	result = (uint8_t) result;
+	set_overflow((result ^ accum) & (result ^ operand) & 0x80);
+	accum = result;
+	set_zero(accum == 0);
+	set_negative(accum & 0x80);
+}
+
+bool CPU::and_(AddressingMode addr_mode) {
+	accum &= mem.read_byte(get_addr(addr_mode));
+	set_zero(accum == 0);
+	set_negative(accum & 0x80);
+}
+
+void CPU::asl(AddressingMode addr_mode){
+	if (addr_mode == AddressingMode::accumulator) {
+		set_carry(accum & 0x80);
+		accum = accum << 1;
+		set_zero(accum == 0);
+		set_negative(accum & 0x80);
+		return;
+	}
+	uint16_t addr = get_addr(addr_mode);
+	uint8_t operand = mem.read_byte(addr);
+    set_carry(operand & 0x80);
+    uint8_t tmp = operand << 1;
+	mem.write_byte(addr, tmp);
+    set_zero(tmp == 0);
+    set_negative(tmp & 0x80);
+}
+
+void CPU::bcc() {
+	int8_t displacement = mem.read_byte(pc++);
+	if (!get_carry())
+		pc += displacement;
+}
+
+void CPU::bcs() {
+	int8_t displacement = mem.read_byte(pc++);
+	if (get_carry())
+		pc += displacement;
+}
+
+void CPU::beq() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(get_zero())
+		pc += displacement;
+}
+
+void CPU::bit(AddressingMode addr_mode) {
+	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t tmp = accum & operand;
+	set_zero(tmp == 0);
+	set_overflow(operand & 0x40);
+	set_negative(operand & 0x80);
+}
+
+void CPU::bmi() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(get_negative())
+		pc += displacement;
+}
+
+void CPU::bne() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(!get_zero())
+		pc += displacement;
+}
+
+void CPU::bpl() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(!get_negative())
+		pc += displacement;
+}
+
+void CPU::brk() {
+	//TODO: Implement interrupts
+}
+
+void CPU::bvc() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(!get_overflow())
+		pc += displacement;
+}
+
+void CPU::bvs() {
+	int8_t displacement = mem.read_byte(pc++);
+	if(get_overflow())
+		pc += displacement;
+}
+
+void CPU::clc() {
+	set_carry(0);
+}
+
+void CPU::cld() {
+	sr &= ~0x8;
+}
+
+void CPU::cli() {
+	set_disable_interrupt(0);
+}
+
+void CPU::clv() {
+	set_overflow(0);
+}
+
+void CPU::cmp(AddressingMode addr_mode) {
+	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	set_carry(accum >= operand);
+	int8_t result = accum - operand;
+	set_zero(result == 0);
+	set_negative(result < 0);
+}
+
+void CPU::cpx(AddressingMode addr_mode) {
+	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	set_carry(reg_x >= operand);
+	int8_t result = reg_x - operand;
+	set_zero(result == 0);
+	set_negative(result < 0);
+}
+
+void CPU::cpy(AddressingMode addr_mode) {
+	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	set_carry(reg_y >= operand);
+	int8_t result = reg_y - operand;
+	set_zero(result == 0);
+	set_negative(result < 0);
+}
+
+void CPU::dec(AddressingMode addr_mode) {
+	uint16_t addr = get_addr(addr_mode);
+	uint8_t tmp = mem.read_byte(addr) - 1;
+	set_zero(tmp == 0);
+	set_negative(tmp & 0x80);
+	mem.write_byte(addr, tmp);
+}
+
+void CPU::dex() {
+	set_zero(--reg_x == 0);
+	set_negative(reg_x & 0x80);
+}
+
+void CPU::dey() {
+	set_zero(--reg_y == 0);
+	set_negative(reg_y & 0x80);
+}
+
+void CPU::eor(AddressingMode addr_mode) {
+	accum ^= mem.read_byte(get_addr(addr_mode));
+	set_zero(accum == 0);
+	set_negative(accum & 0x80);
+}
+
+void CPU::inc(AddressingMode addr_mode) {
+	uint16_t addr = get_addr(addr_mode);
+	uint8_t tmp = mem.read_byte(addr) + 1;
+	set_zero(tmp == 0);
+	set_negative(tmp & 0x80);
+	mem.write_byte(addr, tmp);
+}
+
+void CPU::inx() {
+	set_zero(++reg_x == 0);
+	set_negative(reg_x & 0x80);
+}
+
+void CPU::iny() {
+	set_zero(++reg_y == 0);
+	set_negative(reg_y & 0x80);
+}
+
+void CPU::jmp(AddressingMode addr_mode) {
+
+}
+
+void CPU::jsr() {
+
+}
+
+void CPU::lda(AddressingMode addr_mode) {
+
+}
+
+void CPU::ldx(AddressingMode addr_mode) {
+
+}
+
+void CPU::ldy(AddressingMode addr_mode) {
+
+}
+
+void CPU::lsr(AddressingMode addr_mode) {
+
+}
+
+void CPU::ora(AddressingMode addr_mode) {
+
+}
+
+void CPU::pha() {
+
+}
+
+void CPU::php() {
+
+}
+
+void CPU::pla() {
+
+}
+
+void CPU::plp() {
+
+}
+
+void CPU::rol(AddressingMode addr_mode) {
+
+}
+
+void CPU::ror(AddressingMode addr_mode) {
+
+}
+
+void CPU::rti() {
+
+}
+
+void CPU::rts() {
+
+}
+
+void CPU::sbc(AddressingMode addr_mode) {
+
+}
+
+void CPU::sec() {
+
+}
+
+void CPU::sed() {
+
+}
+
+void CPU::sei() {
+
+}
+
+void CPU::sta(AddressingMode addr_mode) {
+
+}
+
+void CPU::stx(AddressingMode addr_mode) {
+
+}
+
+void CPU::sty(AddressingMode addr_mode) {
+
+}
+
+void CPU::tax() {
+
+}
+
+void CPU::tay() {
+
+}
+
+void CPU::tsx() {
+
+}
+
+void CPU::txa() {
+
+}
+
+void CPU::txs() {
+
+}
+
+void CPU::tya() {
+
 }
 
 size_t CPU::execute_instr() {
@@ -511,294 +799,4 @@ size_t CPU::execute_instr() {
             tya();
             return 2;
     }
-}
-
-bool CPU::adc(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-
-	uint16_t result = accum + get<1>(mem_loc) + get_carry();
-	set_carry(result > 0xff);
-	result = (uint8_t) result;
-	set_overflow((result ^ accum) & (result ^ get<1>(mem_loc)) & 0x80);
-	accum = result;
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
-}
-
-bool CPU::and_(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	accum &= get<1>(mem_loc);
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
-}
-
-void CPU::asl(AddressingMode addr_mode){
-	if (addr_mode == AddressingMode::accumulator) {
-		set_carry(accum & 0x80);
-		accum = accum << 1;
-		set_zero(accum == 0);
-		set_negative(accum & 0x80);
-		return;
-	}
-    auto mem_loc = mem_fetch(addr_mode);
-    set_carry(get<1>(mem_loc) & 0x80);
-    uint8_t tmp = get<1>(mem_loc) << 1;
-	mem.write_byte(get<0>(mem_loc), tmp);
-    set_zero(tmp == 0);
-    set_negative(tmp & 0x80);
-}
-
-void CPU::bcc() {
-	int8_t displacement = mem.read_byte(pc++);
-	if (!get_carry())
-		pc += displacement;
-}
-
-void CPU::bcs() {
-	int8_t displacement = mem.read_byte(pc++);
-	if (get_carry())
-		pc += displacement;
-}
-
-void CPU::beq() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(get_zero())
-		pc += displacement;
-}
-
-void CPU::bit(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	uint8_t tmp = accum & get<1>(mem_loc);
-	set_zero(tmp == 0);
-	set_overflow(get<1>(mem_loc) & 0x40);
-	set_negative(get<1>(mem_loc) & 0x80);
-}
-
-void CPU::bmi() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(get_negative())
-		pc += displacement;
-}
-
-void CPU::bne() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(!get_zero())
-		pc += displacement;
-}
-
-void CPU::bpl() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(!get_negative())
-		pc += displacement;
-}
-
-void CPU::brk() {
-	//TODO: Implement interrupts
-}
-
-void CPU::bvc() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(!get_overflow())
-		pc += displacement;
-}
-
-void CPU::bvs() {
-	int8_t displacement = mem.read_byte(pc++);
-	if(get_overflow())
-		pc += displacement;
-}
-
-void CPU::clc() {
-	set_carry(0);
-}
-
-void CPU::cld() {
-	sr &= ~0x8;
-}
-
-void CPU::cli() {
-	set_disable_interrupt(0);
-}
-
-void CPU::clv() {
-	set_overflow(0);
-}
-
-void CPU::cmp(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	set_carry(accum >= get<1>(mem_loc));
-	int8_t result = accum - get<1>(mem_loc);
-	set_zero(result == 0);
-	set_negative(result < 0);
-}
-
-void CPU::cpx(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	set_carry(reg_x >= get<1>(mem_loc));
-	int8_t result = reg_x - get<1>(mem_loc);
-	set_zero(result == 0);
-	set_negative(result < 0);
-}
-
-void CPU::cpy(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	set_carry(reg_y >= get<1>(mem_loc));
-	int8_t result = reg_y - get<1>(mem_loc);
-	set_zero(result == 0);
-	set_negative(result < 0);
-}
-
-void CPU::dec(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	uint8_t tmp = get<1>(mem_loc) - 1;
-	set_zero(tmp == 0);
-	set_negative(tmp & 0x80);
-	mem.write_byte(get<0>(mem_loc), tmp);
-}
-
-void CPU::dex() {
-	set_zero(--reg_x == 0);
-	set_negative(reg_x & 0x80);
-}
-
-void CPU::dey() {
-	set_zero(--reg_y == 0);
-	set_negative(reg_y & 0x80);
-}
-
-void CPU::eor(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	accum ^= get<1>(mem_loc);
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
-}
-
-void CPU::inc(AddressingMode addr_mode) {
-	auto mem_loc = mem_fetch(addr_mode);
-	uint8_t tmp = get<1>(mem_loc) + 1;
-	set_zero(tmp == 0);
-	set_negative(tmp & 0x80);
-	mem.write_byte(get<0>(mem_loc), tmp);
-}
-
-void CPU::inx() {
-	set_zero(++reg_x == 0);
-	set_negative(reg_x & 0x80);
-}
-
-void CPU::iny() {
-	set_zero(++reg_y == 0);
-	set_negative(reg_y & 0x80);
-}
-
-void CPU::jmp(AddressingMode addr_mode) {
-
-}
-
-void CPU::jsr() {
-
-}
-
-void CPU::lda(AddressingMode addr_mode) {
-
-}
-
-void CPU::ldx(AddressingMode addr_mode) {
-
-}
-
-void CPU::ldy(AddressingMode addr_mode) {
-
-}
-
-void CPU::lsr(AddressingMode addr_mode) {
-
-}
-
-void CPU::ora(AddressingMode addr_mode) {
-
-}
-
-void CPU::pha() {
-
-}
-
-void CPU::php() {
-
-}
-
-void CPU::pla() {
-
-}
-
-void CPU::plp() {
-
-}
-
-void CPU::rol(AddressingMode addr_mode) {
-
-}
-
-void CPU::ror(AddressingMode addr_mode) {
-
-}
-
-void CPU::rti() {
-
-}
-
-void CPU::rts() {
-
-}
-
-void CPU::sbc(AddressingMode addr_mode) {
-
-}
-
-void CPU::sec() {
-
-}
-
-void CPU::sed() {
-
-}
-
-void CPU::sei() {
-
-}
-
-void CPU::sta(AddressingMode addr_mode) {
-
-}
-
-void CPU::stx(AddressingMode addr_mode) {
-
-}
-
-void CPU::sty(AddressingMode addr_mode) {
-
-}
-
-void CPU::tax() {
-
-}
-
-void CPU::tay() {
-
-}
-
-void CPU::tsx() {
-
-}
-
-void CPU::txa() {
-
-}
-
-void CPU::txs() {
-
-}
-
-void CPU::tya() {
-
 }

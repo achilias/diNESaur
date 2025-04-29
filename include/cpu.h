@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include "memory.h"
+#include <tuple>
 
 class CPUMem : public Memory {
 public:
@@ -24,8 +25,9 @@ protected:
     uint8_t reg_y;
     uint8_t sr;
 
-	uint16_t mem_fetch(AddressingMode mode);
+	auto mem_fetch(AddressingMode mode) -> std::tuple<uint16_t, uint8_t>;
     void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
+    bool get_carry() const {return sr & 0x1;}
     void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
     void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
     void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};

@@ -29,9 +29,12 @@ protected:
     void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
     bool get_carry() const {return sr & 0x1;}
     void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
+	bool get_zero() const {return sr & 0x2;}
     void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
     void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
+	bool get_overflow() const {return sr & 0x40;}
     void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
+	bool get_negative() const {return sr & 0x80;}
 
 private:
     bool adc(AddressingMode addr_mode);

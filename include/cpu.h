@@ -1,23 +1,17 @@
-#ifndef CPU_H
-#define CPU_H
+#pragma once
 
-#include "memory.h"
 #include <tuple>
-
-class CPUMem : public Memory {
-public:
-	CPUMem(size_t mem_size, bool enable_mirroring) : Memory(mem_size), enable_mirroring(enable_mirroring) {};
-	uint16_t mirror (uint16_t addr) const;
-    bool enable_mirroring;
-};
+#include <cstddef>
+#include "bus.h"
+#include "common.h"
 
 class CPU {
 public:
-    CPU(bool enable_mirroring) : mem(65536, enable_mirroring), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
+    CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
     size_t execute_instr();
 protected:
     static const uint16_t stack_base = 0x100;
-    CPUMem mem;
+    Bus& bus;
     uint8_t sp;
     uint16_t pc;
     uint8_t accum;
@@ -95,5 +89,3 @@ private:
     void txs();
     void tya();
 };
-
-#endif

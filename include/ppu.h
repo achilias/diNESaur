@@ -1,9 +1,10 @@
-#ifndef PPU_H
-#define PPU_H
+#pragma once
+
+#include "bus.h"
 
 class PPU {
 public:
-    PPU() {};
+    PPU(Bus& bus) : bus(bus) {};
+private:
+    Bus& bus;
 };
-
-#endif

@@ -9,13 +9,13 @@ using json = nlohmann::json;
 
 void TestCPU::mem_locs_set(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
-        mem.write_byte(std::get<0>(*iter), std::get<1>(*iter));
+        bus.ram_write_byte(std::get<0>(*iter), std::get<1>(*iter));
     }
 }
 
 void TestCPU::mem_locs_test(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
-        uint8_t byte = mem.read_byte(std::get<0>(*iter));
+        uint8_t byte = bus.ram_read_byte(std::get<0>(*iter));
         EXPECT_EQ(byte, std::get<1>(*iter));
     }
 }

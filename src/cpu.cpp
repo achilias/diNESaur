@@ -3,16 +3,6 @@
 
 // TODO: implement cycle penalties for page crosses and taken branches
 
-uint16_t CPUMem::mirror(uint16_t addr) const {
-    if (!enable_mirroring)
-        return addr;
-    if (in_range(addr, 0x0, 0x1fff))
-        return addr & 0x7ff;
-    if (in_range(addr, 0x2000, 0x3fff))
-        return addr & 0x2007;
-    return addr;
-}
-
 uint16_t CPU::get_addr(AddressingMode mode) {
 	switch (mode) {
 		uint16_t tmp_u16;
@@ -23,40 +13,40 @@ uint16_t CPU::get_addr(AddressingMode mode) {
 			return pc++;
 		case AddressingMode::indirect:
 		case AddressingMode::absolute:
-			tmp_u16 = mem.read_two_bytes(pc);
+			tmp_u16 = bus.ram_read_two_bytes(pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_x:
-			tmp_u16 = reg_x + mem.read_two_bytes(pc);
+			tmp_u16 = reg_x + bus.ram_read_two_bytes(pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_y:
-			tmp_u16 = reg_y + mem.read_two_bytes(pc);
+			tmp_u16 = reg_y + bus.ram_read_two_bytes(pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::zero_page:
-			return mem.read_byte(pc++);
+			return bus.ram_read_byte(pc++);
 		case AddressingMode::zero_page_idx_x:
-			tmp_u8 = reg_x + mem.read_byte(pc++);
+			tmp_u8 = reg_x + bus.ram_read_byte(pc++);
 			return tmp_u8;
 		case AddressingMode::zero_page_idx_y:
-			tmp_u8 = reg_y + mem.read_byte(pc++);
+			tmp_u8 = reg_y + bus.ram_read_byte(pc++);
 			return tmp_u8;
 		case AddressingMode::indirect_idx_x:
-			tmp_u8 = reg_x + mem.read_byte(pc++);
-			tmp_u16 = mem.read_byte(tmp_u8++);
-			tmp_u16 += mem.read_byte(tmp_u8) << 8;
+			tmp_u8 = reg_x + bus.ram_read_byte(pc++);
+			tmp_u16 = bus.ram_read_byte(tmp_u8++);
+			tmp_u16 += bus.ram_read_byte(tmp_u8) << 8;
 			return tmp_u16;
 		case AddressingMode::indirect_idx_y:
-			tmp_u8 = mem.read_byte(pc++);
-			tmp_u16 = mem.read_byte(tmp_u8++);
-			tmp_u16 += (mem.read_byte(tmp_u8) << 8) + reg_y;
+			tmp_u8 = bus.ram_read_byte(pc++);
+			tmp_u16 = bus.ram_read_byte(tmp_u8++);
+			tmp_u16 += (bus.ram_read_byte(tmp_u8) << 8) + reg_y;
 			return tmp_u16;
 	}
 }
 
 bool CPU::adc(AddressingMode addr_mode) {
-	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	uint16_t result = accum + operand + get_carry();
 	set_carry(result > 0xff);
 	result = (uint8_t) result;
@@ -68,7 +58,7 @@ bool CPU::adc(AddressingMode addr_mode) {
 }
 
 bool CPU::and_(AddressingMode addr_mode) {
-	accum &= mem.read_byte(get_addr(addr_mode));
+	accum &= bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
     return false;
@@ -83,34 +73,34 @@ void CPU::asl(AddressingMode addr_mode){
 		return;
 	}
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t operand = mem.read_byte(addr);
+	uint8_t operand = bus.ram_read_byte(addr);
     set_carry(operand & 0x80);
     uint8_t tmp = operand << 1;
-	mem.write_byte(addr, tmp);
+	bus.ram_write_byte(addr, tmp);
     set_zero(tmp == 0);
     set_negative(tmp & 0x80);
 }
 
 void CPU::bcc() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if (!get_carry())
 		pc += displacement;
 }
 
 void CPU::bcs() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if (get_carry())
 		pc += displacement;
 }
 
 void CPU::beq() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(get_zero())
 		pc += displacement;
 }
 
 void CPU::bit(AddressingMode addr_mode) {
-	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	uint8_t tmp = accum & operand;
 	set_zero(tmp == 0);
 	set_overflow(operand & 0x40);
@@ -118,39 +108,39 @@ void CPU::bit(AddressingMode addr_mode) {
 }
 
 void CPU::bmi() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(get_negative())
 		pc += displacement;
 }
 
 void CPU::bne() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(!get_zero())
 		pc += displacement;
 }
 
 void CPU::bpl() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(!get_negative())
 		pc += displacement;
 }
 
 void CPU::brk() {
-	mem.write_byte(stack_base + sp--, ++pc >> 8);
-	mem.write_byte(stack_base + sp--, pc & 0xff);
-	mem.write_byte(stack_base + sp--, sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
+	bus.ram_write_byte(stack_base + sp--, ++pc >> 8);
+	bus.ram_write_byte(stack_base + sp--, pc & 0xff);
+	bus.ram_write_byte(stack_base + sp--, sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
 	set_disable_interrupt(1);
-	pc = mem.read_two_bytes(0xfffe); // address of irq interrupt handler
+	pc = bus.ram_read_two_bytes(0xfffe); // address of irq interrupt handler
 }
 
 void CPU::bvc() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(!get_overflow())
 		pc += displacement;
 }
 
 void CPU::bvs() {
-	int8_t displacement = mem.read_byte(pc++);
+	int8_t displacement = bus.ram_read_byte(pc++);
 	if(get_overflow())
 		pc += displacement;
 }
@@ -172,7 +162,7 @@ void CPU::clv() {
 }
 
 void CPU::cmp(AddressingMode addr_mode) {
-	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(accum >= operand);
 	int8_t result = accum - operand;
 	set_zero(result == 0);
@@ -180,7 +170,7 @@ void CPU::cmp(AddressingMode addr_mode) {
 }
 
 void CPU::cpx(AddressingMode addr_mode) {
-	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(reg_x >= operand);
 	int8_t result = reg_x - operand;
 	set_zero(result == 0);
@@ -188,7 +178,7 @@ void CPU::cpx(AddressingMode addr_mode) {
 }
 
 void CPU::cpy(AddressingMode addr_mode) {
-	uint8_t operand = mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(reg_y >= operand);
 	int8_t result = reg_y - operand;
 	set_zero(result == 0);
@@ -197,10 +187,10 @@ void CPU::cpy(AddressingMode addr_mode) {
 
 void CPU::dec(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = mem.read_byte(addr) - 1;
+	uint8_t tmp = bus.ram_read_byte(addr) - 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	mem.write_byte(addr, tmp);
+	bus.ram_write_byte(addr, tmp);
 }
 
 void CPU::dex() {
@@ -214,17 +204,17 @@ void CPU::dey() {
 }
 
 void CPU::eor(AddressingMode addr_mode) {
-	accum ^= mem.read_byte(get_addr(addr_mode));
+	accum ^= bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
 }
 
 void CPU::inc(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = mem.read_byte(addr) + 1;
+	uint8_t tmp = bus.ram_read_byte(addr) + 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	mem.write_byte(addr, tmp);
+	bus.ram_write_byte(addr, tmp);
 }
 
 void CPU::inx() {
@@ -246,30 +236,30 @@ void CPU::iny() {
  */
 void CPU::jmp(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	pc = addr_mode == AddressingMode::indirect ? mem.read_two_bytes(addr) : addr;
+	pc = addr_mode == AddressingMode::indirect ? bus.ram_read_two_bytes(addr) : addr;
 }
 
 void CPU::jsr() {
-	uint16_t addr = mem.read_two_bytes(pc++);
-	mem.write_byte(stack_base + sp--, pc >> 8);
-	mem.write_byte(stack_base + sp--, pc & 0xff);
+	uint16_t addr = bus.ram_read_two_bytes(pc++);
+	bus.ram_write_byte(stack_base + sp--, pc >> 8);
+	bus.ram_write_byte(stack_base + sp--, pc & 0xff);
 	pc = addr;
 }
 
 void CPU::lda(AddressingMode addr_mode) {
-	accum = mem.read_byte(get_addr(addr_mode));
+	accum = bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
 }
 
 void CPU::ldx(AddressingMode addr_mode) {
-	reg_x = mem.read_byte(get_addr(addr_mode));
+	reg_x = bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(reg_x == 0);
 	set_negative(reg_x & 0x80);
 }
 
 void CPU::ldy(AddressingMode addr_mode) {
-	reg_y = mem.read_byte(get_addr(addr_mode));
+	reg_y = bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(reg_y == 0);
 	set_negative(reg_y & 0x80);
 }
@@ -283,37 +273,37 @@ void CPU::lsr(AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = mem.read_byte(addr);
+	uint8_t tmp = bus.ram_read_byte(addr);
 	set_carry(tmp & 0x1);
 	tmp = tmp >> 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	mem.write_byte(addr, tmp);
+	bus.ram_write_byte(addr, tmp);
 }
 
 void CPU::ora(AddressingMode addr_mode) {
-	accum |= mem.read_byte(get_addr(addr_mode));
+	accum |= bus.ram_read_byte(get_addr(addr_mode));
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
 }
 
 void CPU::pha() {
-	mem.write_byte(stack_base + sp--, accum);
+	bus.ram_write_byte(stack_base + sp--, accum);
 }
 
 void CPU::php() {
-	mem.write_byte(stack_base + sp--, sr | 0x30);
+	bus.ram_write_byte(stack_base + sp--, sr | 0x30);
 }
 
 void CPU::pla() {
-	accum = mem.read_byte(stack_base + ++sp);
+	accum = bus.ram_read_byte(stack_base + ++sp);
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
 }
 
 void CPU::plp() {
 	// ignore break flag (bit 4): 0xef = 11101111 and set extra bit (bit 5): 0x20 = 00100000
-	sr = 0x20 | (mem.read_byte(stack_base + ++sp) & 0xef);
+	sr = 0x20 | (bus.ram_read_byte(stack_base + ++sp) & 0xef);
 }
 
 void CPU::rol(AddressingMode addr_mode) {
@@ -326,12 +316,12 @@ void CPU::rol(AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = mem.read_byte(addr);
+	uint8_t tmp = bus.ram_read_byte(addr);
 	uint8_t tmp_ = (tmp << 1) | get_carry();
 	set_carry(tmp & 0x80);
 	set_zero(tmp_ == 0);
 	set_negative(tmp_ & 0x80);
-	mem.write_byte(addr, tmp_);
+	bus.ram_write_byte(addr, tmp_);
 }
 
 void CPU::ror(AddressingMode addr_mode) {
@@ -344,27 +334,27 @@ void CPU::ror(AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = mem.read_byte(addr);
+	uint8_t tmp = bus.ram_read_byte(addr);
 	uint8_t tmp_ = (tmp >> 1) | (((uint8_t) get_carry()) << 7);
 	set_carry(tmp & 0x1);
 	set_zero(tmp_ == 0);
 	set_negative(tmp_ & 0x80);
-	mem.write_byte(addr, tmp_);
+	bus.ram_write_byte(addr, tmp_);
 }
 
 void CPU::rti() {
-	sr = 0x20 | (mem.read_byte(stack_base + ++sp) & 0xef);
-	pc = ((uint16_t) mem.read_byte(stack_base + sp + 2)) << 8 | mem.read_byte(stack_base + sp + 1);
+	sr = 0x20 | (bus.ram_read_byte(stack_base + ++sp) & 0xef);
+	pc = ((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1);
 	sp += 2;
 }
 
 void CPU::rts() {
-	pc = ((uint16_t) mem.read_byte(stack_base + sp + 2)) << 8 | mem.read_byte(stack_base + sp + 1) + 1;
+	pc = ((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1) + 1;
 	sp += 2;
 }
 
 void CPU::sbc(AddressingMode addr_mode) {
-	uint8_t operand = ~mem.read_byte(get_addr(addr_mode));
+	uint8_t operand = ~bus.ram_read_byte(get_addr(addr_mode));
 	uint16_t result = accum + operand + get_carry();
 	set_carry(result > 0xff);
 	result = (uint8_t) result;
@@ -388,17 +378,17 @@ void CPU::sei() {
 
 void CPU::sta(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	mem.write_byte(addr, accum);
+	bus.ram_write_byte(addr, accum);
 }
 
 void CPU::stx(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	mem.write_byte(addr, reg_x);
+	bus.ram_write_byte(addr, reg_x);
 }
 
 void CPU::sty(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	mem.write_byte(addr, reg_y);
+	bus.ram_write_byte(addr, reg_y);
 }
 
 void CPU::tax() {
@@ -438,7 +428,7 @@ void CPU::tya() {
 size_t CPU::execute_instr() {
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;
-    switch (uint8_t opcode = mem.read_byte(pc++); opcode) {
+    switch (uint8_t opcode = bus.ram_read_byte(pc++); opcode) {
         case 0x69:
             adc(AddressingMode::immediate);
             return 2;

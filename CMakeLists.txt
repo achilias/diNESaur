@@ -22,7 +22,7 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(json)
 
-add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp)
+add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp src/bus.cpp src/ppu.cpp)
 target_include_directories(nes_emu_core PUBLIC include)
 
 add_executable(nes_emu src/main.cpp)

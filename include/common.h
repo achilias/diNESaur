@@ -1,9 +1,6 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #include <cstdint>
-#include <vector>
-
 enum class AddressingMode {
     accumulator,
     immediate,
@@ -17,5 +14,3 @@ enum class AddressingMode {
     indirect_idx_x,
     indirect_idx_y,
 };
-
-#endif

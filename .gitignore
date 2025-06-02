@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Test case files
+test/json_tests/*
+
+# CMake files
+build/*

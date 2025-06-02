@@ -64,12 +64,14 @@ bool CPU::adc(AddressingMode addr_mode) {
 	accum = result;
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
+    return false;
 }
 
 bool CPU::and_(AddressingMode addr_mode) {
 	accum &= mem.read_byte(get_addr(addr_mode));
 	set_zero(accum == 0);
 	set_negative(accum & 0x80);
+    return false;
 }
 
 void CPU::asl(AddressingMode addr_mode){
@@ -235,6 +237,13 @@ void CPU::iny() {
 	set_negative(reg_y & 0x80);
 }
 
+/* TODO: jmp with indirect addressing (6C) on the 6502 has a quirk where:
+ * "An original 6502 has does not correctly fetch the target address if the indirect vector falls on a page boundary (e.g. $xxFF where xx is any value from $00 to $FF).
+ * In this case fetches the LSB from $xxFF as expected but takes the MSB from $xx00.
+ * This is fixed in some later chips like the 65SC02 so for compatibility always ensure the indirect vector is not at the end of the page."
+ * (https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP)
+ * a few test cases fail due to this, should be replicated for accuracy, but not important right now
+ */
 void CPU::jmp(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
 	pc = addr_mode == AddressingMode::indirect ? mem.read_two_bytes(addr) : addr;

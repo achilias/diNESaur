@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 
 project(nes-emu LANGUAGES CXX)
 
@@ -6,21 +6,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-Wall")
 
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/cd430b47a54841ec45d64d2377d7cabaf0eba610.zip
-)
+include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
+
+find_package(GTest CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-
-FetchContent_Declare(
-        json
-        URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
-)
-
-FetchContent_MakeAvailable(json)
 
 add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp src/bus.cpp src/ppu.cpp)
 target_include_directories(nes_emu_core PUBLIC include)

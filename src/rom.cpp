@@ -1,7 +1,7 @@
 #include "rom.h"
 #include <iostream>
 
-ROM::ROM(std::ifstream &stream) {
+void ROM::load(std::ifstream &stream) {
     if (!stream.good()) {
         std::cerr << "Error reading file\n";
     }
@@ -21,5 +21,11 @@ ROM::ROM(std::ifstream &stream) {
     prg_size = buf[4];
     chr_size = buf[5];
     mapper = buf[7] & 0xF0 | buf[6] >> 4;
+    
+    prg_data.resize(prg_size);
+    chr_data.resize(chr_size);
+}
 
+ROM::ROM(std::ifstream &stream) : prg_data(0), chr_data(0) {
+    load(stream);
 }

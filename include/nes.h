@@ -6,13 +6,14 @@
 
 class NES {
 public:
-    NES(std::ifstream &rom_stream) : cpu(bus), ppu(bus), bus(rom), rom(rom_stream) {
+    NES(std::ifstream &rom_stream) : rom(rom_stream), bus(rom), cpu(bus), ppu(bus) {
+        
     };
     void run() {};
 
 private:
+    ROM rom;
+    Bus bus;
     CPU cpu;
     PPU ppu;
-    Bus bus;
-    ROM rom;
 };

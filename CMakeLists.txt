@@ -10,18 +10,18 @@ include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
 find_package(GTest CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp)
+add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp src/graphics.cpp)
 target_include_directories(nes_emu_core PUBLIC include)
+target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3)
 
 add_executable(nes_emu src/main.cpp)
-target_link_libraries(nes_emu PUBLIC
+target_link_libraries(nes_emu PRIVATE
 nes_emu_core
-$<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
-$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+SDL3::SDL3
 )
 
 enable_testing()

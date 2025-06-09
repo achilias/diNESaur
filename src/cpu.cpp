@@ -42,6 +42,9 @@ uint16_t CPU::get_addr(AddressingMode mode) {
 			tmp_u16 = bus.ram_read_byte(tmp_u8++);
 			tmp_u16 += (bus.ram_read_byte(tmp_u8) << 8) + reg_y;
 			return tmp_u16;
+        default:
+            // TODO: error
+            return 0;
 	}
 }
 
@@ -349,7 +352,7 @@ void CPU::rti() {
 }
 
 void CPU::rts() {
-	pc = ((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1) + 1;
+	pc = (((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1)) + 1;
 	sp += 2;
 }
 
@@ -882,5 +885,8 @@ size_t CPU::execute_instr() {
         case 0x98:
             tya();
             return 2;
+        default:
+            // TODO: exception
+            return 0;
     }
 }

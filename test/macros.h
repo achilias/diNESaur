@@ -17,5 +17,4 @@ macro(a0, a1)                           \
 __VA_OPT__(FOR_EACH_AGAIN PARENS (macro, a0, __VA_ARGS__))
 #define FOR_EACH_AGAIN() FOR_EACH_HELPER
 
-#define MAKE_OPCODE_TESTS(func, ...) \
-    FOR_EACH(OPCODE_TEST, func, __VA_ARGS__)
+#define MAKE_OPCODE_TESTS(func, ...) FOR_EACH(OPCODE_TEST, func, __VA_ARGS__)

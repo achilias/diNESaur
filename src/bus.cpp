@@ -17,6 +17,7 @@ uint16_t Bus::ram_mirror(uint16_t addr) const {
 }
 
 uint16_t Bus::vram_mirror(uint16_t addr) const {
-    // TODO
-    return 0x0;
+    if (in_range(addr, 0x3f20, 0x3fff))
+        return addr & 0x3f1f;
+    return addr;
 }

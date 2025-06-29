@@ -10,13 +10,7 @@ int main(int argc, char *argv[]) {
 
     NES nes(file);
 
-    using namespace GraphicsContext;
-    display_init();
-
-    while (update())
-        render(SDL_GetTicks());
-
-    finish();
+    nes.run();
 
     return 0;
 }

@@ -9,7 +9,7 @@ public:
     NES(std::ifstream &rom_stream) : rom(rom_stream), bus(rom), cpu(bus), ppu(bus) {
         
     };
-    void run() {};
+    void run();
 
 private:
     ROM rom;

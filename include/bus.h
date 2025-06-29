@@ -7,6 +7,8 @@
 
 #define RAM_SIZE 65536
 #define VRAM_SIZE 16383
+#define SCREEN_WIDTH 256
+#define SCREEN_HEIGHT 240
 
 class Bus {
 public:
@@ -27,13 +29,17 @@ public:
 
     void set_mapping(bool map_memory_nes) {this->map_memory_nes = map_memory_nes;}
 
+    uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 private:
-    static bool in_range(uint16_t addr, uint16_t start, uint16_t end) {return addr >= start && addr <= end;};
     std::array<uint8_t, RAM_SIZE> ram;
     std::array<uint8_t, VRAM_SIZE> vram;
+
     ROM& rom;
     bool map_memory_nes { true }; // map memory according to nes memory map. disable for cpu testing
+
+    static bool in_range(uint16_t addr, uint16_t start, uint16_t end) {return addr >= start && addr <= end;};
+
     uint16_t ram_mirror(uint16_t addr) const;
     uint16_t vram_mirror(uint16_t addr) const;
 };

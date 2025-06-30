@@ -4,7 +4,10 @@
 
 class PPU {
 public:
-    PPU(Bus& bus) : bus(bus) {};
+    PPU(Bus& bus) : bus(bus) {
+        for (size_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
+            framebuffer[i] = 0xff000000;
+    };
     void draw_tile(uint32_t i, uint32_t loc_x, uint32_t loc_y);
     uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 private:

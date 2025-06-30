@@ -49,8 +49,9 @@ bool GraphicsContext::update() {
 }
 
 static void draw_rect(int x, int y, int rect_width, int rect_height, uint32_t colour, uint32_t *buf) {
-    for (int y_ = y; y_ < y + rect_height; y_++)
-        memset(&buf[y_ * window_width + x], colour, rect_width * 4);
+    for (int x_ = x; x_ < x + rect_width; x_++)
+        for (int y_ = y; y_ < y + rect_height; y_++)
+            buf[y_ * window_width + x_] = colour;
 }
 
 void GraphicsContext::render(uint64_t ticks, uint32_t *buffer) {

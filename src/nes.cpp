@@ -6,12 +6,18 @@
 void NES::run() {
     using namespace GraphicsContext;
     display_init();
+    cpu.reset();
 
-	for (int i = 0; i < 200; i++)
-		ppu.draw_tile(i, i * 8, (i / 30) * 8);
-
-    while (update())
-        render(SDL_GetTicks(), ppu.framebuffer);
+    while (update()) {
+        size_t cycles = 0;
+        if (bus.nmi) {
+            cpu.handle_nmi();
+            cycles = 2;
+        }
+        cycles += cpu.execute_instr();
+        if (ppu.run(3 * cycles))
+            render(SDL_GetTicks(), ppu.framebuffer);
+    }
 
     finish();
 }

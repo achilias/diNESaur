@@ -3,6 +3,18 @@
 
 // TODO: implement cycle penalties for page crosses and taken branches
 
+void CPU::handle_nmi() {
+    bus.nmi = false;
+    bus.ram_write_byte(stack_base + sp--, sr);  
+    bus.ram_write_two_bytes(stack_base + sp, sr);  
+    sp -= 2;
+    pc = bus.ram_read_two_bytes(0xfffa);
+}
+
+void CPU::reset() {
+    pc = bus.ram_read_two_bytes(0xfffc);
+}
+
 uint16_t CPU::get_addr(AddressingMode mode) {
 	switch (mode) {
 		uint16_t tmp_u16;

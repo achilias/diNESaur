@@ -1,5 +1,39 @@
 #include "ppu.h"
-#include <iostream>
+
+bool PPU::run(size_t cycles) {
+	scanline_pixel += cycles;
+
+	if (scanline_n == 240 && scanline_pixel == 1) {
+		bus.nmi = true;
+		return false;
+	}
+
+	if (scanline_pixel >= 340) {
+		scanline_pixel %= 340;
+		scanline_pixel++;
+
+		if (scanline_n >= 261) {
+			scanline_n = 0;
+			if (bus.ppu_ctrl.vblank_enable)
+				bus.nmi = false;
+			return true;
+		}
+	}
+
+	if (scanline_n >= 0 && scanline_n <= 239) {
+		// TODO
+		// uint16_t nametable_start = 0x2000;
+		// for (int i = 0; i < 32; i++) {
+		// 	int x = i * 8;
+		// 	for (int j = 0; j < 30; j++) {
+		// 		int y = j * 8;
+		// 		draw_tile(i * 30 + j, x, y);
+		// 	}
+		// }
+	}
+
+	return false;
+}
 
 static void set_pixel(uint32_t *buf, uint32_t x, uint32_t y, uint32_t colour) {
 	buf[y * SCREEN_WIDTH + x] = colour;

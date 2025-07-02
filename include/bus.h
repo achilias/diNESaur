@@ -41,8 +41,12 @@ public:
             }
         }
 
-        if(in_range(addr, 0x8000, 0xffff))
-            return rom.read_byte_prg(ram_mirror(addr) - 0x8000);
+        /* TODO: properly handle mapper mirroring / bank switching. 
+           TODO: for now, find solution that works for NROM-128 
+        */
+        if(in_range(addr, 0x8000, 0xffff)) {
+            return rom.read_byte_prg(addr - 0x8000);
+        }
 
         return ram[ram_mirror(addr)];
     };
@@ -52,7 +56,7 @@ public:
             ram[addr] = val;
             return;
         }
-        
+
         switch (addr) {
             case 0x2000:
                 ppu_ctrl.raw = val;
@@ -102,16 +106,22 @@ public:
     /* Map cpu memory according to NES memory map (mirroring, mapped ppu registers, etc.).
      * Disable to run regular 6502 cpu tests */
     bool map_memory_nes { true };
-private:
-    std::array<uint8_t, RAM_SIZE> ram;
-    std::array<uint8_t, VRAM_SIZE> vram;
-    std::array<uint8_t, OAM_SIZE> oam;
+
+    bool nmi = false;
+    size_t catchup_cycles = 0;
+
+    // TODO: move to ppu. use friend classes
     PPUCtrl ppu_ctrl;
     PPUMask ppu_mask;
     PPUStatus ppu_status;
     uint8_t oam_addr = 0;
     uint16_t ppu_addr = 0;
     bool ppu_w_reg = 0;
+
+private:
+    std::array<uint8_t, RAM_SIZE> ram;
+    std::array<uint8_t, VRAM_SIZE> vram;
+    std::array<uint8_t, OAM_SIZE> oam;
 
     ROM& rom;
 

@@ -19,6 +19,7 @@ public:
         ppu_ctrl.raw = 0;
         ppu_mask.raw = 0;
         ppu_status.raw = 0;
+        ppu_ctrl.vblank_enable = 1;
     };
     uint8_t ram_read_byte(uint16_t addr) {
         if (!map_memory_nes)
@@ -44,9 +45,11 @@ public:
         /* TODO: properly handle mapper mirroring / bank switching. 
            TODO: for now, find solution that works for NROM-128 
         */
-        if(in_range(addr, 0x8000, 0xffff)) {
+        if(in_range(addr, 0x8000, 0xbfff)) {
             return rom.read_byte_prg(addr - 0x8000);
         }
+        if (in_range(addr, 0xc000, 0xffff))
+            return rom.read_byte_prg(addr - 0xc000);
 
         return ram[ram_mirror(addr)];
     };

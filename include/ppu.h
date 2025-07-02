@@ -13,6 +13,6 @@ public:
     uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
 private:
     Bus& bus;
-    uint8_t scanline_pixel = 0;
-    uint8_t scanline_n = 0;
+    size_t scanline_pixel = 0;
+    size_t scanline_n = 0;
 };

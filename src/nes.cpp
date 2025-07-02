@@ -8,15 +8,17 @@ void NES::run() {
     display_init();
     cpu.reset();
 
-    while (update()) {
+    while (update(false)) {
         size_t cycles = 0;
         if (bus.nmi) {
             cpu.handle_nmi();
             cycles = 2;
         }
         cycles += cpu.execute_instr();
-        if (ppu.run(3 * cycles))
+        if (ppu.run(3 * cycles)) {
+            update(true);
             render(SDL_GetTicks(), ppu.framebuffer);
+        }
     }
 
     finish();

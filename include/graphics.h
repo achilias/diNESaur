@@ -11,6 +11,6 @@ namespace GraphicsContext {
     extern SDL_Texture* texture;
     void display_init();
     void finish();
-    bool update();
+    bool update(bool draw);
     void render(uint64_t ticks, uint32_t *buffer);
 };

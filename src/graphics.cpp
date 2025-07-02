@@ -25,7 +25,7 @@ void GraphicsContext::finish() {
     SDL_Quit();
 }
 
-bool GraphicsContext::update() {
+bool GraphicsContext::update(bool draw) {
     SDL_Event e;
     if (SDL_PollEvent(&e)) {
         if (e.type == SDL_EVENT_QUIT)
@@ -33,6 +33,10 @@ bool GraphicsContext::update() {
         if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
             return false;
     }
+
+    // TODO: separate functions for drawing and for polling button presses
+    if (!draw)
+        return true;
 
     char *pixels;
     int row_sz;
@@ -44,7 +48,6 @@ bool GraphicsContext::update() {
     SDL_UnlockTexture(texture);
     SDL_RenderTexture(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
-    SDL_Delay(1);
     return true;
 }
 

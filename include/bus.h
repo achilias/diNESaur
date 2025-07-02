@@ -21,11 +21,15 @@ public:
         ppu_status.raw = 0;
     };
     uint8_t ram_read_byte(uint16_t addr) {
+        if (!map_memory_nes)
+            return ram[addr];
+
         switch (addr) {
-            case 0x2002:
+            case 0x2002: {
                 uint8_t tmp = ppu_status.raw;
                 ppu_status.vblank = false;
                 return tmp;
+            }
             case 0x2004:
                 /* TODO: reads to OAMDATA should have different behavior during rendering
                  * (i.e. not during vblanks), few games use this, but should be handled for accuracy. */
@@ -36,13 +40,19 @@ public:
                 return vram_read_byte(old);
             }
         }
-        if(in_range(addr, 0x8000, 0xffff) && map_memory_nes)
+
+        if(in_range(addr, 0x8000, 0xffff))
             return rom.read_byte_prg(ram_mirror(addr) - 0x8000);
-            
+
         return ram[ram_mirror(addr)];
     };
     uint16_t ram_read_two_bytes(uint16_t addr) { return (((uint16_t) ram_read_byte(addr + 1)) << 8) | ram_read_byte(addr); };
     void ram_write_byte(uint16_t addr, uint8_t val) {
+        if (!map_memory_nes) {
+            ram[addr] = val;
+            return;
+        }
+        
         switch (addr) {
             case 0x2000:
                 ppu_ctrl.raw = val;

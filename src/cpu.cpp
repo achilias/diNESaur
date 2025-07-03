@@ -5,13 +5,14 @@
 
 void CPU::handle_nmi() {
     bus.nmi = false;
+    bus.ram_write_byte(stack_base + sp--, sr | 0x20);  
     bus.ram_write_two_bytes(stack_base + sp, pc); 
     sp -= 2; 
-    bus.ram_write_byte(stack_base + sp--, sr | 0x20);  
     pc = bus.ram_read_two_bytes(0xfffa);
 }
 
 void CPU::reset() {
+    // pc = 0xc000;
     pc = bus.ram_read_two_bytes(0xfffc);
 }
 
@@ -242,15 +243,15 @@ void CPU::iny() {
 	set_negative(reg_y & 0x80);
 }
 
-/* TODO: jmp with indirect addressing (6C) on the 6502 has a quirk where:
- * "An original 6502 has does not correctly fetch the target address if the indirect vector falls on a page boundary (e.g. $xxFF where xx is any value from $00 to $FF).
- * In this case fetches the LSB from $xxFF as expected but takes the MSB from $xx00.
- * This is fixed in some later chips like the 65SC02 so for compatibility always ensure the indirect vector is not at the end of the page."
- * (https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP)
- * a few test cases fail due to this, should be replicated for accuracy, but not important right now
- */
 void CPU::jmp(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
+    if (addr_mode == AddressingMode::indirect && (addr & 0xff) == 0xff) {
+        /* CPU quirk in nes version of 6502
+         * See https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP
+         */
+        pc = (((uint16_t) bus.ram_read_byte(addr & 0xff00)) << 8) | bus.ram_read_byte(addr);
+        return;
+    }
 	pc = addr_mode == AddressingMode::indirect ? bus.ram_read_two_bytes(addr) : addr;
 }
 
@@ -441,6 +442,7 @@ void CPU::tya() {
 }
 
 size_t CPU::execute_instr() {
+    // printf("%4X\n", bus.ram_read_byte(pc));
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;
     switch (uint8_t opcode = bus.ram_read_byte(pc++); opcode) {

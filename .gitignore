@@ -33,6 +33,7 @@
 
 # Test case files
 test/json_tests/*
+*.nes
 
 # CMake files
 build/*

@@ -7,13 +7,14 @@
 
 class CPU {
 public:
-    CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {};
+    CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {
+    };
     size_t execute_instr();
     void handle_nmi();
     void reset();
+    Bus& bus;
 protected:
     static const uint16_t stack_base = 0x100;
-    Bus& bus;
     uint8_t sp;
     uint16_t pc;
     uint8_t accum;
@@ -22,18 +23,18 @@ protected:
     uint8_t sr;
 
 	uint16_t get_addr(AddressingMode mode);
-    void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
-    bool get_carry() const {return sr & 0x1;}
-    void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
-	bool get_zero() const {return sr & 0x2;}
-    void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
-    bool get_disable_interrupt() {return sr & 0x4;}
-    void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
-	void set_decimal(bool cond) {sr = cond ? sr | 0x8 : sr & ~0x8;}
-	bool get_decimal() {return sr & 0x8;}
-	bool get_overflow() const {return sr & 0x40;}
-    void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
-	bool get_negative() const {return sr & 0x80;}
+    inline void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
+    inline bool get_carry() const {return sr & 0x1;}
+    inline void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
+    inline bool get_zero() const {return sr & 0x2;}
+    inline void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
+    inline bool get_disable_interrupt() {return sr & 0x4;}
+    inline void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
+    inline void set_decimal(bool cond) {sr = cond ? sr | 0x8 : sr & ~0x8;}
+    inline bool get_decimal() {return sr & 0x8;}
+    inline bool get_overflow() const {return sr & 0x40;}
+    inline void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
+    inline bool get_negative() const {return sr & 0x80;}
 
 private:
     bool adc(AddressingMode addr_mode);

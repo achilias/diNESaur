@@ -3,33 +3,34 @@
 bool PPU::run(size_t cycles) {
 	scanline_pixel += cycles;
 
-	if (scanline_n == 240 && scanline_pixel == 1) {
+	if (scanline_n == 240) {
+		scanline_n++;
 		bus.nmi = true;
 		return false;
 	}
 
 	if (scanline_pixel >= 340) {
 		scanline_pixel %= 340;
-		scanline_pixel++;
+		scanline_n++;
 
 		if (scanline_n >= 261) {
 			scanline_n = 0;
-			if (bus.ppu_ctrl.vblank_enable)
-				bus.nmi = false;
+			bus.nmi = false;
+			uint16_t nametable_start = 0x2000;
+			for (int i = 0; i < 32; i++) {
+			int x = i * 8;
+			for (int j = 0; j < 30; j++) {
+				int y = j * 8;
+				uint8_t tile = bus.vram_read_byte(nametable_start + i * 30 + j);
+				draw_tile(tile, x, y);
+			}
+		}
 			return true;
 		}
 	}
 
 	if (scanline_n >= 0 && scanline_n <= 239) {
 		// TODO
-		// uint16_t nametable_start = 0x2000;
-		// for (int i = 0; i < 32; i++) {
-		// 	int x = i * 8;
-		// 	for (int j = 0; j < 30; j++) {
-		// 		int y = j * 8;
-		// 		draw_tile(i * 30 + j, x, y);
-		// 	}
-		// }
 	}
 
 	return false;

@@ -72,7 +72,12 @@ void PPU::draw_tile(uint32_t i, uint32_t loc_x, uint32_t loc_y) {
 			uint8_t lsb = bus.vram_read_byte(loc + y) & (0x80 >> x);
 			uint8_t msb = bus.vram_read_byte(loc + y + 8) & (0x80 >> x);
 			uint8_t palette_idx = ((msb != 0) << 1) | (lsb != 0);
-			uint32_t colour = palette_idx == 0 ? 0xffffffff : palette_idx == 1 ? 0xffff0000 : palette_idx == 2 ? 0xff00ff00 : 0xfff0000f;
+			#define RED 0xffff0000
+			#define GREEN 0xff00ff00
+			#define BLUE 0xff0000ff
+			#define BLACK 0xffffffff
+
+			uint32_t colour = palette_idx == 0 ? GREEN : palette_idx == 1 ? RED : palette_idx == 2 ? BLACK : BLUE;
 
 			set_pixel(framebuffer, loc_x + x, loc_y + y, colour);
 		}

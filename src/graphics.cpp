@@ -15,7 +15,7 @@ void GraphicsContext::display_init() {
     framebuffer = new uint32_t[window_width * window_height];
     window = SDL_CreateWindow("NES emulator", window_width, window_height, 0);
     renderer = SDL_CreateRenderer(window, nullptr);
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
 }
 
 void GraphicsContext::finish() {

@@ -360,8 +360,9 @@ void CPU::ror(AddressingMode addr_mode) {
 
 void CPU::rti() {
 	sr = 0x20 | (bus.ram_read_byte(stack_base + ++sp) & 0xef);
-	pc = ((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1);
-	sp += 2;
+    uint8_t pcl = bus.ram_read_byte(stack_base + ++sp);
+    uint8_t pch = bus.ram_read_byte(stack_base + ++sp);
+	pc = (((uint16_t) pch) << 8) | pcl;
 }
 
 void CPU::rts() {

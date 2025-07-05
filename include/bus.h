@@ -41,6 +41,7 @@ public:
     uint8_t oam_addr = 0;
     uint16_t ppu_addr = 0;
     bool ppu_w_reg = 0;
+    bool ignore_ctrl_writes = 1;
 
 private:
     const ROM& rom;

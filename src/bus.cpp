@@ -22,13 +22,6 @@ uint16_t Bus::ram_mirror(uint16_t addr) const {
 }
 
 uint16_t Bus::vram_mirror(uint16_t addr) const {
-    // if (in_range(addr, 0x2400, 0x2800 - 1))
-        // return addr - 0x400;
-    // if (in_range(addr, 0x2800, 0x2c00 - 1))
-        // return addr - 0x400;
-    
-    // // if (in_range(addr, 0x0, 0x3eff))
-    //     return rom.chr_size == 0x2000 ? addr % 0x2000 : addr;
     if (in_range(addr, 0, 0x1fff))
         return addr % rom.chr_size;
     // TODO: horizontal mirroring only, implement other mirroring modes
@@ -40,6 +33,15 @@ uint16_t Bus::vram_mirror(uint16_t addr) const {
         return addr;
     if (in_range(addr, 0x2c00, 0x2fff))
         return addr - 0x400;
+
+    // if (in_range(addr, 0x2000, 0x23ff))
+    //     return addr;
+    // if (in_range(addr, 0x2400, 0x27ff))
+    //     return addr;
+    // if (in_range(addr, 0x2800, 0x2bff))
+    //     return addr - 0x800;
+    // if (in_range(addr, 0x2c00, 0x2fff))
+    //     return addr - 0x800;
 
     if (in_range(addr, 0x3f20, 0x3fff))
         return addr & 0x3f1f;
@@ -90,7 +92,8 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
 
     switch (ram_mirror(addr)) {
         case 0x2000:
-            ppu_ctrl.raw = val;
+            if (!ignore_ctrl_writes)
+                ppu_ctrl.raw = val;
             return;
         case 0x2001:
             ppu_mask.raw = val;

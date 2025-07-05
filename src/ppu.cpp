@@ -22,8 +22,9 @@ bool PPU::run(size_t cycles) {
 
 	if (scanline_n == 240) {
 		scanline_n++;
-		if (bus.ppu_ctrl.vblank_enable)
+		if (bus.ppu_ctrl.vblank_enable) {
 			bus.nmi = true;
+		}
 
 		uint16_t nt_base[] = {0x2000, 0x2400, 0x2800, 0x2c00};
 		uint16_t nt_start = nt_base[bus.ppu_ctrl.nt];
@@ -45,8 +46,9 @@ bool PPU::run(size_t cycles) {
 		scanline_n++;
 
 		if (scanline_n >= 261) {
+			bus.ignore_ctrl_writes = 0;
 			scanline_n = 0;
-			// bus.nmi = false;
+			bus.nmi = false;
 
 			// printf("End of frame!\n");
 			

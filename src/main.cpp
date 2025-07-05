@@ -7,8 +7,9 @@
 
 int main(int argc, char *argv[]) {
     std::ifstream file(argv[1], std::ios::binary);
+    ROM rom(file);
 
-    NES nes(file);
+    NES nes(rom);
 
     nes.run();
 

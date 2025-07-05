@@ -25,7 +25,7 @@ uint16_t Bus::vram_mirror(uint16_t addr) const {
         return rom.chr_size == 0x2000 ? addr % 0x2000 : addr;
     if (in_range(addr, 0x3f20, 0x3fff))
         return addr & 0x3f1f;
-    return addr;
+    return addr % rom.chr_size;
 }
 
 
@@ -117,7 +117,12 @@ uint8_t Bus::vram_read_byte(uint16_t addr) const {
 uint16_t Bus::vram_read_two_bytes(uint16_t addr) const { return ((uint16_t) vram[vram_mirror(addr + 1)]) << 8 | vram[vram_mirror(addr)]; };
 
 
-void Bus::vram_write_byte(uint16_t addr, uint8_t val) { vram[vram_mirror(addr)] = val; };
+void Bus::vram_write_byte(uint16_t addr, uint8_t val) { 
+    addr = vram_mirror(addr);
+    if (addr > vram.size() || addr < 0)
+        printf("Out of bounds vram %p\n", addr);
+    vram[vram_mirror(addr)] = val;
+};
 
 
 void Bus::vram_write_two_bytes(uint16_t addr, uint16_t val) { vram_write_byte(vram_mirror(addr), (uint8_t) (val & 0xFF)); vram_write_byte(vram_mirror(addr) + 1, (uint8_t) (val >> 8)); };

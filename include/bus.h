@@ -7,7 +7,7 @@
 #include "flags.h"
 
 #define RAM_SIZE 65536
-#define VRAM_SIZE 16383
+#define VRAM_SIZE 16384
 #define OAM_SIZE 256
 
 #define SCREEN_WIDTH 256

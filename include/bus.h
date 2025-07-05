@@ -42,7 +42,9 @@ public:
     uint16_t ppu_addr = 0;
     bool ppu_w_reg = 0;
     bool ignore_ctrl_writes = 1;
+    static uint16_t ram_mirror(uint16_t addr);
 
+    uint16_t vram_mirror(uint16_t addr) const;
 private:
     const ROM& rom;
     std::array<uint8_t, RAM_SIZE> ram;
@@ -53,6 +55,4 @@ private:
 
     static bool in_range(uint16_t addr, uint16_t start, uint16_t end) {return addr >= start && addr <= end;};
 
-    uint16_t ram_mirror(uint16_t addr) const;
-    uint16_t vram_mirror(uint16_t addr) const;
 };

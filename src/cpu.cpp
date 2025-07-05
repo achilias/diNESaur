@@ -365,8 +365,9 @@ void CPU::rti() {
 }
 
 void CPU::rts() {
-	pc = (((uint16_t) bus.ram_read_byte(stack_base + sp + 2)) << 8 | bus.ram_read_byte(stack_base + sp + 1)) + 1;
-	sp += 2;
+    uint8_t pcl = bus.ram_read_byte(stack_base + ++sp);
+    uint8_t pch = bus.ram_read_byte(stack_base + ++sp);
+    pc = ((((uint16_t) pch) << 8) | pcl) + 1;
 }
 
 void CPU::sbc(AddressingMode addr_mode) {
@@ -901,6 +902,8 @@ size_t CPU::execute_instr() {
             return 2;
         default:
             // TODO: exception
+            printf("Unimplemented opcode %p!\n", opcode);
+            exit(0);
             return 0;
     }
 }

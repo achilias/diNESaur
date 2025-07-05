@@ -20,11 +20,23 @@ void PPU::print_nametables() {
 bool PPU::run(size_t cycles) {
 	scanline_pixel += cycles;
 
-	if (scanline_n == 240) {
+	if (scanline_pixel < 340)
+		return false;
+
+	scanline_pixel %= 340;
+	scanline_n++;
+
+	if (scanline_n >= 261) {
+		bus.ignore_ctrl_writes = 0;
+		scanline_n = 0;
+		bus.ppu_status.vblank = false;
+	}
+	
+
+	if (scanline_n == 241) {
 		scanline_n++;
+		bus.ppu_status.vblank = true;
 		if (bus.ppu_ctrl.vblank_enable) {
-			// bus.nmi = true;
-			bus.ppu_status.vblank = true;
 			bus.nmi = true;
 		}
 
@@ -40,22 +52,6 @@ bool PPU::run(size_t cycles) {
 			}
 		}
 		return true;
-	}
-
-	if (scanline_pixel >= 340) {
-		scanline_pixel %= 340;
-		scanline_n++;
-
-		if (scanline_n >= 261) {
-			bus.ignore_ctrl_writes = 0;
-			scanline_n = 0;
-			bus.nmi = false;
-			bus.ppu_status.vblank = false;
-
-			// printf("End of frame!\n");
-			
-			return false;
-		}
 	}
 
 	return false;

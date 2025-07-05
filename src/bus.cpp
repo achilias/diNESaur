@@ -5,8 +5,6 @@ Bus::Bus(ROM& rom) : rom(rom) {
     ppu_ctrl.raw = 0;
     ppu_mask.raw = 0;
     ppu_status.raw = 0;
-    ppu_ctrl.vblank_enable = true;
-    assert(ppu_ctrl.vblank_enable);
 };
 
 uint16_t Bus::ram_mirror(uint16_t addr) {
@@ -103,7 +101,7 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
     }
 
     switch (ram_mirror(addr)) {
-        case 0x2000:
+        case 0x2000: // PPUCTRL
             if (ignore_ctrl_writes)
                 return;
             

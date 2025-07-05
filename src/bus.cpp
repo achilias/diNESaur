@@ -21,8 +21,8 @@ uint16_t Bus::ram_mirror(uint16_t addr) const {
 }
 
 uint16_t Bus::vram_mirror(uint16_t addr) const {
-    if (in_range(addr, 0x0, 0x3eff))
-        return rom.chr_size == 0x2000 ? addr % 0x2000 : addr;
+    // // if (in_range(addr, 0x0, 0x3eff))
+    //     return rom.chr_size == 0x2000 ? addr % 0x2000 : addr;
     if (in_range(addr, 0x3f20, 0x3fff))
         return addr & 0x3f1f;
     return addr % rom.chr_size;

@@ -31,7 +31,7 @@ void ROM::load(std::ifstream &stream) {
     }
     // memcpy(chr_data.data(), &buf[0x10 + prg_size], chr_size);
     for (int i = 0 ; i < chr_size; i++) {
-        chr_data.push_back(buf[0x10 + i]);
+        chr_data.push_back(buf[0x10 + i + prg_size]);
     }
 
     assert(prg_data.size() == prg_size);

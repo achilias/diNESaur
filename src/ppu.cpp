@@ -16,15 +16,18 @@ bool PPU::run(size_t cycles) {
 		if (scanline_n >= 261) {
 			scanline_n = 0;
 			bus.nmi = false;
-			uint16_t nametable_start = 0x2000;
+			
+			uint16_t nt_base[] = {0x2000, 0x2400, 0x2800, 0x2c00};
+			uint16_t nametable_start = nt_base[bus.ppu_ctrl.nt];
 			for (int i = 0; i < 32; i++) {
-			int x = i * 8;
-			for (int j = 0; j < 30; j++) {
-				int y = j * 8;
-				uint8_t tile = bus.vram_read_byte(nametable_start + i * 30 + j);
-				draw_tile(tile, x, y);
+				int x = i * 8;
+				for (int j = 0; j < 30; j++) {
+					int y = j * 8;
+					uint8_t tile = bus.vram_read_byte(nametable_start + i * 30 + j);
+					printf("Drawing tile : %d at x: %d, y: %d\n", tile, x , y);
+					draw_tile(tile, x, y);
+				}
 			}
-		}
 			return true;
 		}
 	}

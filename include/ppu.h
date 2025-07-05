@@ -15,4 +15,5 @@ private:
     Bus& bus;
     size_t scanline_pixel = 0;
     size_t scanline_n = 0;
+ void print_nametables();
 };

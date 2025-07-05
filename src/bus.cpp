@@ -1,11 +1,12 @@
 #include "bus.h"
 
-
+#include <assert.h>
 Bus::Bus(ROM& rom) : rom(rom) {
     ppu_ctrl.raw = 0;
     ppu_mask.raw = 0;
     ppu_status.raw = 0;
-    ppu_ctrl.vblank_enable = 1;
+    ppu_ctrl.vblank_enable = true;
+    assert(ppu_ctrl.vblank_enable);
 };
 
 uint16_t Bus::ram_mirror(uint16_t addr) const {
@@ -21,11 +22,28 @@ uint16_t Bus::ram_mirror(uint16_t addr) const {
 }
 
 uint16_t Bus::vram_mirror(uint16_t addr) const {
+    // if (in_range(addr, 0x2400, 0x2800 - 1))
+        // return addr - 0x400;
+    // if (in_range(addr, 0x2800, 0x2c00 - 1))
+        // return addr - 0x400;
+    
     // // if (in_range(addr, 0x0, 0x3eff))
     //     return rom.chr_size == 0x2000 ? addr % 0x2000 : addr;
+    if (in_range(addr, 0, 0x1fff))
+        return addr % rom.chr_size;
+    // TODO: horizontal mirroring only, implement other mirroring modes
+    if (in_range(addr, 0x2000, 0x23ff))
+        return addr;
+    if (in_range(addr, 0x2400, 0x27ff))
+        return addr - 0x400;
+    if (in_range(addr, 0x2800, 0x2bff))
+        return addr;
+    if (in_range(addr, 0x2c00, 0x2fff))
+        return addr - 0x400;
+
     if (in_range(addr, 0x3f20, 0x3fff))
         return addr & 0x3f1f;
-    return addr % rom.chr_size;
+    return addr % 0x4000;
 }
 
 
@@ -108,8 +126,9 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
 void Bus::ram_write_two_bytes(uint16_t addr, uint16_t val) { ram_write_byte(ram_mirror(addr), (uint8_t) (val & 0xFF)); ram_write_byte(ram_mirror(addr) + 1, (uint8_t) (val >> 8)); };
 
 uint8_t Bus::vram_read_byte(uint16_t addr) const {
-    if (in_range(addr, 0x0, 0x3eff))
+    if (in_range(addr, 0x0, 0x1fff))
         return rom.read_byte_chr(vram_mirror(addr));
+    
     return vram[vram_mirror(addr)];
 };
 
@@ -118,10 +137,15 @@ uint16_t Bus::vram_read_two_bytes(uint16_t addr) const { return ((uint16_t) vram
 
 
 void Bus::vram_write_byte(uint16_t addr, uint8_t val) { 
+    // if (in_range(addr, 0x2000, 0x2fff))
+    //     printf("Nametable write of %p at %p!!!!!\n", val, addr);
     addr = vram_mirror(addr);
-    if (addr > vram.size() || addr < 0)
+    if (addr > vram.size()) {
         printf("Out of bounds vram %p\n", addr);
-    vram[vram_mirror(addr)] = val;
+
+        exit(0);
+    }
+    vram[addr] = val;
 };
 
 

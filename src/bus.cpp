@@ -38,9 +38,9 @@ uint16_t Bus::vram_mirror(uint16_t addr) const{
     // if (in_range(addr, 0x2000, 0x23ff))
     //     return addr;
     // if (in_range(addr, 0x2400, 0x27ff))
-    //     return addr;
+    //     return addr - 0x400;
     // if (in_range(addr, 0x2800, 0x2bff))
-    //     return addr - 0x800;
+    //     return addr;
     // if (in_range(addr, 0x2c00, 0x2fff))
     //     return addr - 0x800;
 
@@ -137,9 +137,17 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             ppu_w_reg = !ppu_w_reg;
             return;
         case 0x2007:
+            {
             uint16_t old = ppu_addr;
             ppu_addr += ppu_ctrl.incr ? 32 : 1;
             vram_write_byte(old, val);
+                return;
+            }
+        case 0x4014:
+            // TODO: cycle penalty
+            uint16_t page_start = ((uint16_t) val) << 8;
+            for (int i = 0; i < 256; i++)
+                oam[i] = ram_read_byte(page_start + i);
             return;
     }
     ram[ram_mirror(addr)] = val;
@@ -171,5 +179,8 @@ void Bus::vram_write_byte(uint16_t addr, uint8_t val) {
 
 void Bus::vram_write_two_bytes(uint16_t addr, uint16_t val) { vram_write_byte(vram_mirror(addr), (uint8_t) (val & 0xFF)); vram_write_byte(vram_mirror(addr) + 1, (uint8_t) (val >> 8)); };
 
+uint8_t Bus::oam_read_byte(uint16_t addr) const {
+    return oam[addr];
+}
 
 void Bus::set_mapping(bool map_memory_nes) {this->map_memory_nes = map_memory_nes;}

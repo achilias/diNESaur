@@ -26,6 +26,8 @@ public:
     void vram_write_byte(uint16_t addr, uint8_t val);
     void vram_write_two_bytes(uint16_t addr, uint16_t val);
 
+    uint8_t oam_read_byte(uint16_t addr) const;
+
     void set_mapping(bool map_memory_nes);
     /* Map cpu memory according to NES memory map (mirroring, mapped ppu registers, etc.).
      * Disable to run regular 6502 cpu tests */

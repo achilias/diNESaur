@@ -5,8 +5,8 @@ union PPUCtrl {
     struct {
         unsigned int nt : 2;
         bool incr : 1;
-        bool sprite_pt : 1;
-        bool bg_pt : 1;
+        uint8_t sprite_pt : 1;
+        uint8_t bg_pt : 1;
         bool sprite_sz : 1;
         bool master_slave : 1;
         bool vblank_enable : 1;

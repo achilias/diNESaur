@@ -138,10 +138,10 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 	uint16_t attr = bus.oam_read_byte(sprite_n * 4 + 2);
 	uint8_t base_x = bus.oam_read_byte(sprite_n * 4 + 3);
 
-	uint16_t tile_start = tile_idx + pt_base[bus.ppu_ctrl.bg_pt ? 0 : 1];
+	uint16_t tile_start = tile_idx + pt_base[bus.ppu_ctrl.sprite_pt];
 
 	bool flip_hrz = (attr & 0b01000000) != 0;
-	bool flip_vrt = (attr & 0x10000000) != 0;
+	bool flip_vrt = (attr & 0b10000000) != 0;
 
 	uint16_t palette_base = SPR_PALETTES_BASE + (attr & 0b11) * 4;
 

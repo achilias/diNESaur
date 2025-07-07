@@ -21,6 +21,7 @@ void ROM::load(std::ifstream &stream) {
 
     prg_size = buf[4] * 16384;
     chr_size = buf[5] * 8192;
+    nt_mirror = static_cast<MirrorMode>(buf[6] & 0x1);
     mapper = (buf[7] & 0xF0) | (buf[6] >> 4);
     
     for (int i = 0 ; i < prg_size; i++) {
@@ -32,7 +33,6 @@ void ROM::load(std::ifstream &stream) {
 
     assert(prg_data.size() == prg_size);
     assert(chr_data.size() == chr_size);
-    assert(canary == 0xDEADBEEF);
 }
 
 ROM::ROM(std::ifstream &stream) : prg_data(0), chr_data(0) {

@@ -23,26 +23,28 @@ uint16_t Bus::ram_mirror(uint16_t addr) {
 uint16_t Bus::vram_mirror(uint16_t addr) const{
     if (in_range(addr, 0, 0x1fff))
         return addr % rom.chr_size;
-    // TODO: implement mirroring switching (read bit from header)
-    // horizontal mirroring only
-    // if (in_range(addr, 0x2000, 0x23ff))
-    //     return addr;
-    // if (in_range(addr, 0x2400, 0x27ff))
-    //     return addr - 0x400;
-    // if (in_range(addr, 0x2800, 0x2bff))
-    //     return addr;
-    // if (in_range(addr, 0x2c00, 0x2fff))
-    //     return addr - 0x400;
 
-    // vertical mirroring
-    if (in_range(addr, 0x2000, 0x23ff))
-        return addr;
-    if (in_range(addr, 0x2400, 0x27ff))
-        return addr;
-    if (in_range(addr, 0x2800, 0x2bff))
-        return addr - 0x800;
-    if (in_range(addr, 0x2c00, 0x2fff))
-        return addr - 0x800;
+    if (rom.nt_mirror == MirrorMode::HORIZONTAL) {
+        if (in_range(addr, 0x2000, 0x23ff))
+            return addr;
+        if (in_range(addr, 0x2400, 0x27ff))
+            return addr - 0x400;
+        if (in_range(addr, 0x2800, 0x2bff))
+            return addr;
+        if (in_range(addr, 0x2c00, 0x2fff))
+            return addr - 0x400;
+    }
+
+    if (rom.nt_mirror == MirrorMode::VERTICAL) {
+        if (in_range(addr, 0x2000, 0x23ff))
+            return addr;
+        if (in_range(addr, 0x2400, 0x27ff))
+            return addr;
+        if (in_range(addr, 0x2800, 0x2bff))
+            return addr - 0x800;
+        if (in_range(addr, 0x2c00, 0x2fff))
+            return addr - 0x800;
+    }
 
     if (in_range(addr, 0x3f00, 0x3fff))
         return addr & 0x3f1f;

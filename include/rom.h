@@ -5,6 +5,11 @@
 
 #define SIGNATURE "NES\x1A" // start of file magic bytes, ASCII string "NES" + "^Z" (msdos EOF)
 
+enum class MirrorMode {
+    HORIZONTAL,
+    VERTICAL
+};
+
 class ROM {
 public:
     ROM() {}; // for testing with dummy empty roms
@@ -12,6 +17,7 @@ public:
     uint32_t prg_size;
     uint32_t chr_size;
     uint8_t mapper;
+    MirrorMode nt_mirror;
 
     void load(std::ifstream &stream);
     uint8_t read_byte_prg(uint16_t addr) const;
@@ -20,6 +26,4 @@ public:
 private:
     std::vector<uint8_t> prg_data;
     std::vector<uint8_t> chr_data;
-    unsigned int canary = 0xDEADBEEF;
-
 };

@@ -5,6 +5,7 @@
 
 #include "rom.h"
 #include "flags.h"
+#include "controller.h"
 
 #define RAM_SIZE 65536
 #define VRAM_SIZE 16384
@@ -15,7 +16,7 @@
 
 class Bus {
 public:
-    Bus(ROM& rom);
+    Bus(ROM& rom, Controller& ctrl);
     uint8_t ram_read_byte(uint16_t addr);
     uint16_t ram_read_two_bytes(uint16_t addr);
     void ram_write_byte(uint16_t addr, uint8_t val);
@@ -36,7 +37,6 @@ public:
     bool nmi = false;
     size_t catchup_cycles = 0;
 
-    // TODO: move to ppu. use friend classes
     PPUCtrl ppu_ctrl;
     PPUMask ppu_mask;
     PPUStatus ppu_status;
@@ -49,6 +49,7 @@ public:
     uint16_t vram_mirror(uint16_t addr) const;
 private:
     const ROM& rom;
+    Controller& ctrl;
     std::array<uint8_t, RAM_SIZE> ram;
     std::array<uint8_t, VRAM_SIZE> vram;
     std::array<uint8_t, OAM_SIZE> oam;

@@ -25,19 +25,7 @@ void GraphicsContext::finish() {
     SDL_Quit();
 }
 
-bool GraphicsContext::update(bool draw) {
-    SDL_Event e;
-    if (SDL_PollEvent(&e)) {
-        if (e.type == SDL_EVENT_QUIT)
-            return false;
-        if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
-            return false;
-    }
-
-    // TODO: separate functions for drawing and for polling button presses
-    if (!draw)
-        return true;
-
+void GraphicsContext::draw() {
     char *pixels;
     int row_sz;
     SDL_LockTexture(texture, nullptr, (void**) &pixels, &row_sz);
@@ -48,6 +36,32 @@ bool GraphicsContext::update(bool draw) {
     SDL_UnlockTexture(texture);
     SDL_RenderTexture(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
+}
+
+bool GraphicsContext::update(Controller& ctrl) {
+    SDL_Event e;
+
+    if (!SDL_PollEvent(&e))
+        return true;
+
+    if (e.type == SDL_EVENT_QUIT)
+        return false;
+    if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
+        return false;
+    
+    if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
+        int idx;
+        switch (e.key.key) {
+            case SDLK_Z: idx = static_cast<int>(Ctrl_State::SELECT); break;
+            case SDLK_X: idx = static_cast<int>(Ctrl_State::START); break;
+            case SDLK_DOWN: idx = static_cast<int>(Ctrl_State::DOWN); break;
+            case SDLK_UP: idx = static_cast<int>(Ctrl_State::UP); break;
+            case SDLK_A: idx = static_cast<int>(Ctrl_State::A); break;
+            case SDLK_B: idx = static_cast<int>(Ctrl_State::B); break;
+        }
+        ctrl.button_states[idx] = e.type == SDL_EVENT_KEY_DOWN;
+    }
+
     return true;
 }
 

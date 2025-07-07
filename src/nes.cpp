@@ -9,7 +9,7 @@ void NES::run() {
     cpu.reset();
 
     bool nmi = false;
-    while (update(false)) {
+    while (update(ctrl)) {
         size_t cycles = 0;
         if (nmi) {
             cpu.handle_nmi();
@@ -18,7 +18,7 @@ void NES::run() {
         cycles += cpu.execute_instr();
         bool before = bus.nmi;
         if (ppu.run(3 * cycles)) {
-            update(true);
+            draw();
             render(SDL_GetTicks(), ppu.framebuffer);
         }
         bool after = bus.nmi;

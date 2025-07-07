@@ -1,7 +1,7 @@
 #include "bus.h"
 
 #include <assert.h>
-Bus::Bus(ROM& rom) : rom(rom) {
+Bus::Bus(ROM& rom, Controller& ctrl) : rom(rom), ctrl(ctrl) {
     ppu_ctrl.raw = 0;
     ppu_mask.raw = 0;
     ppu_status.raw = 0;
@@ -76,6 +76,8 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
             ppu_addr += ppu_ctrl.incr ? 32 : 1;
             return vram_read_byte(old);
         }
+        case 0x4016:
+            return ctrl.poll() ? 1 : 0;
     }
 
     /* TODO: properly handle mapper mirroring / bank switching. 
@@ -138,17 +140,27 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             return;
         case 0x2007:
             {
-            uint16_t old = ppu_addr;
-            ppu_addr += ppu_ctrl.incr ? 32 : 1;
-            vram_write_byte(old, val);
-                return;
+                uint16_t old = ppu_addr;
+                ppu_addr += ppu_ctrl.incr ? 32 : 1;
+                vram_write_byte(old, val);
+                    return;
             }
         case 0x4014:
             // TODO: cycle penalty
-            uint16_t page_start = ((uint16_t) val) << 8;
-            for (int i = 0; i < 256; i++)
-                oam[i] = ram_read_byte(page_start + i);
+            {
+                uint16_t page_start = ((uint16_t) val) << 8;
+                for (int i = 0; i < 256; i++)
+                    oam[i] = ram_read_byte(page_start + i);
+                return;
+            }
+        case 0x4016:
+            if (val & 0x80)
+                ctrl.strobe_set();
+            else
+                ctrl.strobe_clear();
             return;
+
+            // TODO: second controller
     }
     ram[ram_mirror(addr)] = val;
 };

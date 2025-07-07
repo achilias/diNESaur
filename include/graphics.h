@@ -1,4 +1,5 @@
 #pragma once
+#include "controller.h"
 #include <SDL3/SDL.h>
 
 namespace GraphicsContext {
@@ -11,6 +12,7 @@ namespace GraphicsContext {
     extern SDL_Texture* texture;
     void display_init();
     void finish();
-    bool update(bool draw);
+    void draw();
+    bool update(Controller& ctrl);
     void render(uint64_t ticks, uint32_t *buffer);
 };

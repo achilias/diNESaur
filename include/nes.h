@@ -3,17 +3,17 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "bus.h"
+#include "controller.h"
 
 class NES {
 public:
-    NES(ROM &rom) : rom(rom), bus(*new Bus(rom)), cpu(*new CPU(bus)), ppu(*new PPU(bus)) {
-
-    };
+    NES(ROM &rom, Controller& ctrl) : ctrl(ctrl), rom(rom), bus(rom, ctrl), cpu(bus), ppu(bus) {};
     void run();
 
 private:
+    Controller& ctrl;
     ROM& rom;
-    Bus& bus;
-    CPU& cpu;
-    PPU& ppu;
+    Bus bus;
+    CPU cpu;
+    PPU ppu;
 };

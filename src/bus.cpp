@@ -152,7 +152,7 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             {
                 uint16_t page_start = ((uint16_t) val) << 8;
                 for (int i = 0; i < 256; i++)
-                    oam[i] = ram_read_byte(page_start + i);
+                    oam[oam_addr++] = ram_read_byte(page_start + i);
                 return;
             }
         case 0x4016:

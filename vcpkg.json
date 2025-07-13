@@ -2,6 +2,12 @@
   "dependencies": [
     "gtest",
     "nlohmann-json",
-    "sdl3"
+    "sdl3",
+    {
+      "name" : "imgui",
+      "features": [
+        "sdl3-binding"
+      ]
+    }
   ]
 }

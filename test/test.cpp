@@ -34,7 +34,7 @@ void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, 
 };
 
 void TestCPU::test_opcode(std::string opcode) {
-    std::ifstream f("../test/json_tests/" + opcode + ".json");
+    std::ifstream f("../test/65x02/nes6502/v1/" + opcode + ".json");
     json data = json::parse(f);
     for(auto test_case = data.begin(); test_case != data.end(); test_case++) {
         std::cout << (*test_case)["name"] << std::endl;

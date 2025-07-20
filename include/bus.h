@@ -16,7 +16,7 @@
 
 class Bus {
 public:
-    Bus(ROM& rom, Controller& ctrl);
+    Bus(ROM& rom, Controller& ctrl) : rom(rom), ctrl(ctrl) {};
     uint8_t ram_read_byte(uint16_t addr);
     uint16_t ram_read_two_bytes(uint16_t addr);
     void ram_write_byte(uint16_t addr, uint8_t val);
@@ -37,9 +37,9 @@ public:
     bool nmi = false;
     size_t catchup_cycles = 0;
 
-    PPUCtrl ppu_ctrl;
-    PPUMask ppu_mask;
-    PPUStatus ppu_status;
+    PPUCtrl ppu_ctrl = {.raw = 0};
+    PPUMask ppu_mask = {.raw = 0};
+    PPUStatus ppu_status = {.raw = 0};
     uint8_t oam_addr = 0;
     uint16_t ppu_addr = 0;
     bool ppu_w_reg = 0;
@@ -50,9 +50,9 @@ public:
 private:
     const ROM& rom;
     Controller& ctrl;
-    std::array<uint8_t, RAM_SIZE> ram;
-    std::array<uint8_t, VRAM_SIZE> vram;
-    std::array<uint8_t, OAM_SIZE> oam;
+    std::array<uint8_t, RAM_SIZE> ram {};
+    std::array<uint8_t, VRAM_SIZE> vram {};
+    std::array<uint8_t, OAM_SIZE> oam {};
 
 
 

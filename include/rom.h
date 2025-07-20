@@ -1,7 +1,6 @@
 #include <vector>
 #include <cstdint>
 #include <fstream>
-#include <ios>
 
 #define SIGNATURE "NES\x1A" // start of file magic bytes, ASCII string "NES" + "^Z" (msdos EOF)
 
@@ -12,8 +11,8 @@ enum class MirrorMode {
 
 class ROM {
 public:
-    ROM() {}; // for testing with dummy empty roms
-    ROM(std::ifstream &stream); 
+    ROM() = default; // for testing with dummy empty roms
+    explicit ROM(std::ifstream &stream); 
     uint32_t prg_size;
     uint32_t chr_size;
     uint8_t mapper;
@@ -24,6 +23,6 @@ public:
     uint8_t read_byte_chr(uint16_t addr) const;
 
 private:
-    std::vector<uint8_t> prg_data;
-    std::vector<uint8_t> chr_data;
+    std::vector<uint8_t> prg_data {};
+    std::vector<uint8_t> chr_data {};
 };

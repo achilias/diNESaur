@@ -1,5 +1,4 @@
 #include "cpu.h"
-#include <tuple>
 
 // TODO: implement cycle penalties for page crosses and taken branches
 
@@ -98,21 +97,21 @@ void CPU::asl(AddressingMode addr_mode){
 }
 
 void CPU::bcc() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if (!get_carry())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::bcs() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if (get_carry())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::beq() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(get_zero())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::bit(AddressingMode addr_mode) {
@@ -124,21 +123,21 @@ void CPU::bit(AddressingMode addr_mode) {
 }
 
 void CPU::bmi() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(get_negative())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::bne() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(!get_zero())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::bpl() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(!get_negative())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::brk() {
@@ -150,15 +149,15 @@ void CPU::brk() {
 }
 
 void CPU::bvc() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(!get_overflow())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::bvs() {
-	int8_t displacement = bus.ram_read_byte(pc++);
+	auto offset = (int8_t) bus.ram_read_byte(pc++);
 	if(get_overflow())
-		pc += displacement;
+		pc += offset;
 }
 
 void CPU::clc() {
@@ -180,7 +179,7 @@ void CPU::clv() {
 void CPU::cmp(AddressingMode addr_mode) {
 	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(accum >= operand);
-	int8_t result = accum - operand;
+	auto result = (int8_t) (accum - operand);
 	set_zero(result == 0);
 	set_negative(result < 0);
 }
@@ -188,7 +187,7 @@ void CPU::cmp(AddressingMode addr_mode) {
 void CPU::cpx(AddressingMode addr_mode) {
 	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(reg_x >= operand);
-	int8_t result = reg_x - operand;
+	auto result = (int8_t) (reg_x - operand);
 	set_zero(result == 0);
 	set_negative(result < 0);
 }
@@ -196,7 +195,7 @@ void CPU::cpx(AddressingMode addr_mode) {
 void CPU::cpy(AddressingMode addr_mode) {
 	uint8_t operand = bus.ram_read_byte(get_addr(addr_mode));
 	set_carry(reg_y >= operand);
-	int8_t result = reg_y - operand;
+	auto result = (int8_t) (reg_y - operand);
 	set_zero(result == 0);
 	set_negative(result < 0);
 }
@@ -903,7 +902,7 @@ size_t CPU::execute_instr() {
             return 2;
         default:
             // TODO: exception
-            printf("Unimplemented opcode %p!\n", opcode);
+            printf("Unimplemented opcode %hhu!\n", opcode);
             exit(0);
             return 0;
     }

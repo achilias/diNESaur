@@ -128,7 +128,7 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
 			uint32_t colour = palette[bus.vram_read_byte(BG_PALETTES_BASE + offset.raw)];
 
-			set_pixel(framebuffer, base_x + x, base_y + y, colour);
+			set_pixel(framebuffer.data(), base_x + x, base_y + y, colour);
 		}
 }
 
@@ -166,7 +166,7 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 			if (pix_x >= 256 || pix_y >= 240)
 				continue;
 				
-			set_pixel(framebuffer, pix_x, pix_y, colour);
+			set_pixel(framebuffer.data(), pix_x, pix_y, colour);
 		}
 
 }

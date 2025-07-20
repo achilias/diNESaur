@@ -1,7 +1,6 @@
 #include "nes.h"
 
 #include "graphics.h"
-#include <iostream>
 
 void NES::run() {
     using namespace GraphicsContext;
@@ -19,7 +18,7 @@ void NES::run() {
         bool before = bus.nmi;
         if (ppu.run(3 * cycles)) {
             draw();
-            render(SDL_GetTicks(), ppu.framebuffer);
+            render(SDL_GetTicks(), ppu.framebuffer.data());
         }
         bool after = bus.nmi;
         nmi = bus.ppu_status.vblank && !before && after;

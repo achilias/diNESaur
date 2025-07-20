@@ -1,13 +1,25 @@
 #pragma once
 
-#include <tuple>
 #include <cstddef>
 #include "bus.h"
-#include "common.h"
+
+enum class AddressingMode {
+    accumulator,
+    immediate,
+    zero_page,
+    zero_page_idx_x,
+    zero_page_idx_y,
+    absolute,
+    absolute_idx_x,
+    absolute_idx_y,
+    indirect,
+    indirect_idx_x,
+    indirect_idx_y,
+};
 
 class CPU {
 public:
-    CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {
+    explicit CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {
     };
     size_t execute_instr();
     void handle_nmi();
@@ -23,15 +35,17 @@ protected:
     uint8_t sr;
 
 	uint16_t get_addr(AddressingMode mode);
+
+    // TODO: use union with anonymous struct instead
     inline void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
     inline bool get_carry() const {return sr & 0x1;}
     inline void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
     inline bool get_zero() const {return sr & 0x2;}
     inline void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
-    inline bool get_disable_interrupt() {return sr & 0x4;}
+    inline bool get_disable_interrupt() const {return sr & 0x4;}
     inline void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
     inline void set_decimal(bool cond) {sr = cond ? sr | 0x8 : sr & ~0x8;}
-    inline bool get_decimal() {return sr & 0x8;}
+    inline bool get_decimal() const {return sr & 0x8;}
     inline bool get_overflow() const {return sr & 0x40;}
     inline void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
     inline bool get_negative() const {return sr & 0x80;}

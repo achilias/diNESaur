@@ -4,14 +4,13 @@
 
 class PPU {
 public:
-    PPU(Bus& bus) : bus(bus) {
-        for (size_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
-            framebuffer[i] = 0xff000000;
+    explicit PPU(Bus& bus) : bus(bus) {
+        framebuffer.fill(0xff000000);
     };
     bool run(size_t cycles);
-    void draw_tile(uint32_t i, uint32_t loc_x, uint32_t loc_y);
+    void draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y);
     void draw_sprite(uint8_t sprite_n);
-    uint32_t framebuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    std::array<uint32_t, SCREEN_WIDTH * SCREEN_HEIGHT> framebuffer {};
 private:
     Bus& bus;
     size_t scanline_pixel = 0;

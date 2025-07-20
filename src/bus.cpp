@@ -1,11 +1,6 @@
 #include "bus.h"
 
-#include <assert.h>
-Bus::Bus(ROM& rom, Controller& ctrl) : rom(rom), ctrl(ctrl) {
-    ppu_ctrl.raw = 0;
-    ppu_mask.raw = 0;
-    ppu_status.raw = 0;
-};
+#include <cassert>
 
 uint16_t Bus::ram_mirror(uint16_t addr) {
     if (in_range(addr, 0x0, 0x1fff))

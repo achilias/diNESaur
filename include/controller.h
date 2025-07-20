@@ -20,11 +20,10 @@ enum class Ctrl_State : int {
 //     Ctrl_State ret = static_cast<Ctrl_State>(next);
 //     return ret;
 // }
-#include <stdio.h>
 
 struct Controller {
     Ctrl_State state;
-    std::array<bool, 8> button_states;
+    std::array<bool, 8> button_states {};
     Controller() : state(Ctrl_State::A) {
         button_states.fill(false);
     }
@@ -38,7 +37,6 @@ struct Controller {
 
         int old = static_cast<int>(state);
         state = static_cast<Ctrl_State>(old + 1);
-        // printf("Button state : %d\n", static_cast<int>(state));
         return button_states[old];
     }
 

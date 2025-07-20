@@ -1,22 +1,22 @@
 #include "rom.h"
 #include <iostream>
 #include <cstring>
-#include <assert.h>
+#include <cassert>
 
-void ROM::load(std::ifstream &stream) {
+ROM::ROM(std::ifstream &stream) {
     if (!stream.good()) {
         std::cerr << "Error reading file\n";
     }
 
-    stream.seekg(0, stream.end);
+    stream.seekg(0, std::ifstream::end);
     size_t file_size = stream.tellg();
-    stream.seekg(0, stream.beg);
+    stream.seekg(0, std::ifstream::beg);
 
     std::vector<char> buf(file_size);
     stream.read(&buf[0], static_cast<std::streamsize>(file_size));
 
     std::string magic_bytes(buf.begin(), buf.begin() + 4);
-    if (magic_bytes.compare(SIGNATURE) != 0)
+    if (magic_bytes != SIGNATURE)
         std::cerr << "ROM file not of iNES type\n";
 
     prg_size = buf[4] * 16384;
@@ -33,10 +33,6 @@ void ROM::load(std::ifstream &stream) {
 
     assert(prg_data.size() == prg_size);
     assert(chr_data.size() == chr_size);
-}
-
-ROM::ROM(std::ifstream &stream) : prg_data(0), chr_data(0) {
-    load(stream);
 }
 
 

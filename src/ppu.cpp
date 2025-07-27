@@ -62,29 +62,16 @@ const uint32_t palette[] = {
 #define BG_PALETTES_BASE 0x3f00
 #define SPR_PALETTES_BASE 0x3f10
 
-union palette_offset_t {
-	uint8_t raw;
-	struct {
-		uint8_t pixel_val : 2;
-		uint8_t palette   : 2;
-		bool 	bg_spr    : 1;
-		uint8_t dummy	  : 3;
-	};
-};
 
-union attr_tb_byte_t {
-	uint8_t raw;
-	struct {
-		uint8_t top_left 	: 2;
-		uint8_t top_right 	: 2;
-		uint8_t bottom_left : 2;
-		uint8_t bottom_right: 2;
-	};	
-};
 
 uint16_t nt_base[]	= {0x2000, 0x2400, 0x2800, 0x2c00};
 uint16_t at_base[]	= {0x23c0, 0x27c0, 0x2bc0, 0x2fc0};
 uint16_t pt_base[]	= {0x0, 0x1000};
+
+#define ATTR_TB_BYTE_TOP_LEFT(attr_tb_byte)			((attr_tb_byte) & 0b11)
+#define ATTR_TB_BYTE_TOP_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0b1100) >> 2)
+#define ATTR_TB_BYTE_BOTTOM_LEFT(attr_tb_byte)		(((attr_tb_byte) & 0b110000) >> 4)
+#define ATTR_TB_BYTE_BOTTOM_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0b11000000) >> 6)
 
 uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 	uint16_t at_start = at_base[PPUCTRL_NT(bus.ppu_ctrl)];
@@ -92,19 +79,23 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 	uint16_t nt_x = tile_n % 32;
 	uint16_t at_idx = (nt_y / 4 )* 8 + nt_x / 4;
 
-	attr_tb_byte_t at_byte = {.raw = bus.vram_read_byte(at_start + at_idx)};
-		if (((nt_x % 4) / 2) == 0) {
+	uint8_t at_byte = bus.vram_read_byte(at_start + at_idx);
+	if (((nt_x % 4) / 2) == 0) {
 		if (((nt_y % 4) / 2) == 0)
-			return at_byte.top_left;
+			return ATTR_TB_BYTE_TOP_LEFT(at_byte);
 
-		return at_byte.bottom_left;
+		return ATTR_TB_BYTE_BOTTOM_LEFT(at_byte);
 	} else {
 		if (((nt_y % 4) / 2) == 0)
-			return at_byte.top_right;
+			return ATTR_TB_BYTE_TOP_RIGHT(at_byte);
 
-		return at_byte.bottom_right;
+		return ATTR_TB_BYTE_BOTTOM_RIGHT(at_byte);
 	}
 }
+#define PAL_OFFSET_PIXEL_VAL_SET(offset, val)	{offset = ((offset) & ~0b11) | ((val) & 0b11);}
+#define PAL_OFFSET_PALETTE_SET(offset, val)		{offset = ((offset) & ~0b1100) | (((val) & 0b11) << 2);}
+#define PAL_OFFSET_BG_SPR_SET(offset, val)		{offset = ((offset) & ~0b10000) | (((uint8_t)(val)) << 4);}
+
 
 void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
@@ -119,14 +110,12 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 			uint8_t msb = 0 == (bus.vram_read_byte(tile_start + y + 8) & (0x80 >> x))
 						? 0 : 1;
 
-			palette_offset_t offset = {
-				.pixel_val = (uint8_t) (msb << 1 | lsb),
-				.palette =  attr_tb_lookup(tile_n),
-				.bg_spr = 0,
-				.dummy = 0
-			};
+			uint8_t offset = 0;
+			PAL_OFFSET_PIXEL_VAL_SET(offset, (uint8_t)(msb << 1 | lsb));
+			PAL_OFFSET_PALETTE_SET(offset, attr_tb_lookup(tile_n));
+			PAL_OFFSET_BG_SPR_SET(offset, false);
 
-			uint32_t colour = palette[bus.vram_read_byte(BG_PALETTES_BASE + offset.raw)];
+			uint32_t colour = palette[bus.vram_read_byte(BG_PALETTES_BASE + offset)];
 
 			set_pixel(framebuffer.data(), base_x + x, base_y + y, colour);
 		}

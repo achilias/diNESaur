@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include "bus.h"
+#include <stdio.h>
 
 using namespace GraphicsContext;
 
@@ -8,17 +9,33 @@ bool GraphicsContext::done;
 SDL_Window* GraphicsContext::window;
 SDL_Renderer* GraphicsContext::renderer;
 SDL_Texture* GraphicsContext::texture;
+ImVec4 GraphicsContext::clear_colour;
 
 void GraphicsContext::display_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     
+    clear_colour = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     framebuffer = new uint32_t[window_width * window_height];
     window = SDL_CreateWindow("NES emulator", window_width, window_height, 0);
     renderer = SDL_CreateRenderer(window, nullptr);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer3_Init(renderer);
 }
 
 void GraphicsContext::finish() {
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -26,6 +43,7 @@ void GraphicsContext::finish() {
 }
 
 void GraphicsContext::draw() {
+    bool flag;
     char *pixels;
     int row_sz;
     SDL_LockTexture(texture, nullptr, (void**) &pixels, &row_sz);
@@ -34,7 +52,19 @@ void GraphicsContext::draw() {
         memcpy(pixels + sp, framebuffer + dp, window_width * 4); // 4 bytes per pixel
     
     SDL_UnlockTexture(texture);
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
     SDL_RenderTexture(renderer, texture, nullptr, nullptr);
+    ImGui::NewFrame();
+
+    ImGui::Begin("Emulator");
+    ImGui::Image((ImTextureID)texture, ImVec2(SCREEN_WIDTH, SCREEN_HEIGHT));
+    ImGui::End();
+
+    ImGui::Render();
+    SDL_SetRenderDrawColorFloat(renderer, clear_colour.x, clear_colour.y, clear_colour.z, clear_colour.w);
+    SDL_RenderClear(renderer);
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
     SDL_RenderPresent(renderer);
 }
 
@@ -42,6 +72,7 @@ bool GraphicsContext::update(Controller& ctrl) {
     SDL_Event e;
 
     while (SDL_PollEvent(&e)) {
+        ImGui_ImplSDL3_ProcessEvent(&e);
         if (e.type == SDL_EVENT_QUIT)
             return false;
         if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
@@ -58,6 +89,8 @@ bool GraphicsContext::update(Controller& ctrl) {
                 case SDLK_RIGHT: idx = static_cast<int>(Ctrl_State::RIGHT); break;
                 case SDLK_A: idx = static_cast<int>(Ctrl_State::A); break;
                 case SDLK_B: idx = static_cast<int>(Ctrl_State::B); break;
+                default:
+                    idx = static_cast<int>(Ctrl_State::START);
             }
             ctrl.button_states[idx] = e.type == SDL_EVENT_KEY_DOWN;
         }

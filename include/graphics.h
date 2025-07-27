@@ -1,5 +1,8 @@
 #pragma once
 #include "controller.h"
+#include "imgui.h"
+#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdlrenderer3.h"
 #include <SDL3/SDL.h>
 
 namespace GraphicsContext {
@@ -8,6 +11,7 @@ namespace GraphicsContext {
     extern uint32_t* framebuffer;
     extern bool done;
     extern SDL_Window* window;
+    extern ImVec4 clear_colour;
     extern SDL_Renderer* renderer;
     extern SDL_Texture* texture;
     void display_init();

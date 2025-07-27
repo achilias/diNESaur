@@ -10,16 +10,16 @@ bool PPU::run(size_t cycles) {
 	scanline_n++;
 
 	if (scanline_n >= 261) {
-		bus.ignore_ctrl_writes = 0;
+		bus.ignore_ctrl_writes = false;
 		scanline_n = 0;
-		bus.ppu_status.vblank = false;
+		PPUSTATUS_SET_VBLANK(bus.ppu_status, false);
 	}
 	
 
 	if (scanline_n == 241) {
 		scanline_n++;
-		bus.ppu_status.vblank = true;
-		if (bus.ppu_ctrl.vblank_enable) {
+		PPUSTATUS_SET_VBLANK(bus.ppu_status, true);
+		if (PPUCTRL_VBLANK_ENABLE(bus.ppu_ctrl)) {
 			bus.nmi = true;
 		}
 
@@ -87,7 +87,7 @@ uint16_t at_base[]	= {0x23c0, 0x27c0, 0x2bc0, 0x2fc0};
 uint16_t pt_base[]	= {0x0, 0x1000};
 
 uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
-	uint16_t at_start = at_base[bus.ppu_ctrl.nt];
+	uint16_t at_start = at_base[PPUCTRL_NT(bus.ppu_ctrl)];
 	uint16_t nt_y = tile_n / 32;
 	uint16_t nt_x = tile_n % 32;
 	uint16_t at_idx = (nt_y / 4 )* 8 + nt_x / 4;
@@ -108,9 +108,9 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 
 void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
-	uint16_t pt_tile_offset = bus.vram_read_byte(nt_base[bus.ppu_ctrl.nt] + tile_n) * 16;
+	uint16_t pt_tile_offset = bus.vram_read_byte(nt_base[PPUCTRL_NT(bus.ppu_ctrl)] + tile_n) * 16;
 
-	uint16_t tile_start = pt_tile_offset + pt_base[bus.ppu_ctrl.bg_pt];
+	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(bus.ppu_ctrl)];
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
@@ -135,12 +135,12 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 void PPU::draw_sprite(uint8_t sprite_n) {
 	uint8_t base_y = bus.oam_read_byte(sprite_n * 4);
 	uint16_t tile_idx = bus.oam_read_byte(sprite_n * 4 + 1);
-	if (bus.ppu_ctrl.sprite_sz)
+	if (PPUCTRL_SPRITE_SZ(bus.ppu_ctrl))
 		printf("Attempted to draw 8x16 sprite. This is unimplemented!\n");
 	uint16_t attr = bus.oam_read_byte(sprite_n * 4 + 2);
 	uint8_t base_x = bus.oam_read_byte(sprite_n * 4 + 3);
 
-	uint16_t tile_start = 16 * tile_idx + pt_base[bus.ppu_ctrl.sprite_pt];
+	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(bus.ppu_ctrl)];
 	bool flip_hrz = (attr & 0b01000000) != 0;
 	bool flip_vrt = (attr & 0b10000000) != 0;
 

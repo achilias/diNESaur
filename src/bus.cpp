@@ -59,8 +59,8 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
 
     switch (ram_mirror(addr)) {
         case 0x2002: {
-            uint8_t tmp = ppu_status.raw;
-            ppu_status.vblank = false;
+            uint8_t tmp = ppu_status;
+            PPUSTATUS_SET_VBLANK(ppu_status, false);
             ppu_w_reg = false;
             return tmp;
         }
@@ -70,7 +70,7 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
             return oam[oam_addr];
         case 0x2007: {
             uint16_t old = ppu_addr;
-            ppu_addr += ppu_ctrl.incr ? 32 : 1;
+            ppu_addr += PPUCTRL_INCR(ppu_ctrl) ? 32 : 1;
             return vram_read_byte(old);
         }
         case 0x4016:
@@ -105,16 +105,16 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
                 return;
             
             {
-            bool before = ppu_ctrl.vblank_enable;
-            ppu_ctrl.raw = val;
-            bool after = ppu_ctrl.vblank_enable;
-            if (!before && after && ppu_status.vblank)
+            bool before = PPUCTRL_VBLANK_ENABLE(ppu_ctrl);
+            ppu_ctrl = val;
+            bool after = PPUCTRL_VBLANK_ENABLE(ppu_ctrl);
+            if (!before && after && PPUSTATUS_VBLANK(ppu_status))
                 nmi = true && printf("nmi triggered on flag change!\n");;
             }
 
             return;
         case 0x2001:
-            ppu_mask.raw = val;
+            ppu_mask = val;
             return;
         case 0x2003:
             oam_addr = val;
@@ -138,7 +138,7 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
         case 0x2007:
             {
                 uint16_t old = ppu_addr;
-                ppu_addr += ppu_ctrl.incr ? 32 : 1;
+                ppu_addr += PPUCTRL_INCR(ppu_ctrl) ? 32 : 1;
                 vram_write_byte(old, val);
                     return;
             }

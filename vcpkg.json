@@ -1,7 +1,8 @@
 {
+  "builtin-baseline": "f2e1c41da38c71be74ef48684666991929b45418",
   "dependencies": [
     "gtest",
-    "nlohmann-json",
-    "wxwidgets"
+    "wxwidgets",
+    "nlohmann-json"
   ]
 }

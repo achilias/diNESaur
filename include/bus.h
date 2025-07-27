@@ -34,16 +34,16 @@ public:
      * Disable to run regular 6502 cpu tests */
     bool map_memory_nes { true };
 
-    bool nmi = false;
-    size_t catchup_cycles = 0;
+    bool nmi { false };
+    size_t catchup_cycles{ 0 };
 
-    PPUCtrl ppu_ctrl = {.raw = 0};
-    PPUMask ppu_mask = {.raw = 0};
-    PPUStatus ppu_status = {.raw = 0};
-    uint8_t oam_addr = 0;
-    uint16_t ppu_addr = 0;
-    bool ppu_w_reg = 0;
-    bool ignore_ctrl_writes = 1;
+    uint8_t ppu_ctrl{ 0 };
+    uint8_t ppu_mask{ 0 };
+    uint8_t ppu_status{ 0 };
+    uint8_t oam_addr{ 0 };
+    uint16_t ppu_addr{ 0 };
+    bool ppu_w_reg{ false };
+    bool ignore_ctrl_writes{ true };
     static uint16_t ram_mirror(uint16_t addr);
 
     uint16_t vram_mirror(uint16_t addr) const;

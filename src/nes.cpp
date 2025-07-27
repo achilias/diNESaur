@@ -21,7 +21,7 @@ void NES::run() {
             render(SDL_GetTicks(), ppu.framebuffer.data());
         }
         bool after = bus.nmi;
-        nmi = bus.ppu_status.vblank && !before && after;
+        nmi = PPUSTATUS_VBLANK(bus.ppu_status) && !before && after;
     }
 
     finish();

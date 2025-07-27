@@ -4,24 +4,20 @@ project(nes-emu LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-Wall -fsanitize=address")
+set(CMAKE_CXX_FLAGS "-Wall")
 
 include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
 find_package(GTest CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(wxWidgets CONFIG REQUIRED)
-
-# SDL is vendored (vcpkg version doesn't build with wayland support properly)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-add_subdirectory(vendor/SDL EXCLUDE_FROM_ALL)
+find_package(SDL3 CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 add_library(nes_emu_core STATIC src/nes.cpp src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp src/graphics.cpp)
 target_include_directories(nes_emu_core PUBLIC include)
-target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3)
+target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3 imgui::imgui)
 
 add_executable(nes_emu src/main.cpp)
 target_link_libraries(nes_emu PRIVATE

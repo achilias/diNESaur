@@ -1,8 +1,17 @@
-# nes-emu
+# DiNESaur
+
+A simple NES emulator written in C++ using SDL3.
 
 ## TODO
-- [ ] APU emulation
-- [ ] PPU scrolling
+### High priority
 - [ ] Unofficial opcodes
-- [ ] Accurate CPU cycle timing (page cross penalties etc)
 - [ ] Mappers othen than 0
+
+### Middle priority
+- [ ] PPU scrolling
+- [ ] Accurate CPU cycle timing (page cross penalties etc)
+
+### Low priority
+- [ ] APU emulation
+- [ ] Expand and improve GUI
+- [ ] PPU testing for accuracy

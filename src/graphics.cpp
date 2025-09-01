@@ -57,9 +57,17 @@ void GraphicsContext::draw() {
     SDL_RenderTexture(renderer, texture, nullptr, nullptr);
     ImGui::NewFrame();
 
-    ImGui::Begin("Emulator");
-    ImGui::Image((ImTextureID)texture, ImVec2(SCREEN_WIDTH, SCREEN_HEIGHT));
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+    ImGui::Begin("Emulator", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::Image((ImTextureID)texture, ImVec2(window_width, window_height));
     ImGui::End();
+
+    ImGui::PopStyleVar(2);
 
     ImGui::Render();
     SDL_SetRenderDrawColorFloat(renderer, clear_colour.x, clear_colour.y, clear_colour.z, clear_colour.w);

@@ -41,3 +41,12 @@ build/*
 .vscode/settings.json
 vcpkg_installed/*
 .cache/*
+
+# Build files
+build/*
+out/
+cmake-*/*
+nes-emu/*
+
+# IDE files
+.vs/*

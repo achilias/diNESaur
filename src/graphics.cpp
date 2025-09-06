@@ -100,7 +100,7 @@ bool GraphicsContext::update(Controller& ctrl) {
             int idx;
             switch (e.key.key) {
                 case SDLK_F1:
-                    FileDialog::file_dialog_open = !FileDialog::file_dialog_open;
+                    FileDialog::file_dialog_open = true;
                     return true;
                 case SDLK_Z:
                     idx = static_cast<int>(Ctrl_State::SELECT);

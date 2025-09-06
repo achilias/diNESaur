@@ -6,9 +6,19 @@ void NES::run() {
     using namespace GraphicsContext;
     display_init();
     cpu.reset();
+    std::ifstream file(rom_path, std::ios::binary);
 
     bool nmi = false;
     while (update(ctrl)) {
+        if (rom_changed) {
+            file = std::ifstream(rom_path, std::ios::binary);
+            bus.rom = new ROM(file);
+            cpu.reset();
+            bus.reset();
+            ppu.reset();
+            rom_changed = false;
+        }
+
         size_t cycles = 0;
         if (nmi) {
             cpu.handle_nmi();

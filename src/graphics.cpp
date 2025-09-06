@@ -1,15 +1,19 @@
 #include "graphics.h"
-#include "bus.h"
+#include "L2DFileDialog.h"
 #include <stdio.h>
+
+#define SCREEN_WIDTH 256
+#define SCREEN_HEIGHT 240
 
 using namespace GraphicsContext;
 
-uint32_t *GraphicsContext::framebuffer;
-bool GraphicsContext::done;
-SDL_Window* GraphicsContext::window;
+uint32_t*     GraphicsContext::framebuffer;
+SDL_Window*   GraphicsContext::window;
 SDL_Renderer* GraphicsContext::renderer;
-SDL_Texture* GraphicsContext::texture;
-ImVec4 GraphicsContext::clear_colour;
+SDL_Texture*  GraphicsContext::texture;
+ImVec4        GraphicsContext::clear_colour;
+bool          GraphicsContext::rom_changed;
+char          GraphicsContext::rom_path[1024] = "";
 
 void GraphicsContext::display_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
@@ -67,6 +71,12 @@ void GraphicsContext::draw() {
     ImGui::Image((ImTextureID)texture, ImVec2(window_width, window_height));
     ImGui::End();
 
+    if (FileDialog::file_dialog_open) {
+        FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, rom_path, sizeof(rom_path), FileDialog::file_dialog_open_type);
+        if (strlen(rom_path))   // "Cancel" writes "" to the buffer
+            rom_changed = true;
+    }
+
     ImGui::PopStyleVar(2);
 
     ImGui::Render();
@@ -89,14 +99,33 @@ bool GraphicsContext::update(Controller& ctrl) {
         if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
             int idx;
             switch (e.key.key) {
-                case SDLK_Z: idx = static_cast<int>(Ctrl_State::SELECT); break;
-                case SDLK_X: idx = static_cast<int>(Ctrl_State::START); break;
-                case SDLK_DOWN: idx = static_cast<int>(Ctrl_State::DOWN); break;
-                case SDLK_UP: idx = static_cast<int>(Ctrl_State::UP); break;
-                case SDLK_LEFT: idx = static_cast<int>(Ctrl_State::LEFT); break;
-                case SDLK_RIGHT: idx = static_cast<int>(Ctrl_State::RIGHT); break;
-                case SDLK_A: idx = static_cast<int>(Ctrl_State::A); break;
-                case SDLK_B: idx = static_cast<int>(Ctrl_State::B); break;
+                case SDLK_F1:
+                    FileDialog::file_dialog_open = !FileDialog::file_dialog_open;
+                    return true;
+                case SDLK_Z:
+                    idx = static_cast<int>(Ctrl_State::SELECT);
+                    break;
+                case SDLK_X:
+                    idx = static_cast<int>(Ctrl_State::START);
+                    break;
+                case SDLK_DOWN:
+                    idx = static_cast<int>(Ctrl_State::DOWN);
+                    break;
+                case SDLK_UP:
+                    idx = static_cast<int>(Ctrl_State::UP);
+                    break;
+                case SDLK_LEFT:
+                    idx = static_cast<int>(Ctrl_State::LEFT);
+                    break;
+                case SDLK_RIGHT:
+                    idx = static_cast<int>(Ctrl_State::RIGHT);
+                    break;
+                case SDLK_A:
+                    idx = static_cast<int>(Ctrl_State::A);
+                    break;
+                case SDLK_B:
+                    idx = static_cast<int>(Ctrl_State::B);
+                    break;
                 default:
                     idx = static_cast<int>(Ctrl_State::START);
             }

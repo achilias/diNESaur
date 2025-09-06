@@ -12,6 +12,11 @@ void CPU::handle_nmi() {
 
 void CPU::reset() {
     // pc = 0xc000;
+    sp = 0xff;
+    accum = 0;
+    reg_x = 0;
+    reg_y = 0;
+    sr = 0;
     pc = bus.ram_read_two_bytes(0xfffc);
 }
 

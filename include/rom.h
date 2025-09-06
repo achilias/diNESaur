@@ -18,7 +18,6 @@ public:
     uint8_t mapper;
     MirrorMode nt_mirror;
 
-    void load(std::ifstream &stream);
     uint8_t read_byte_prg(uint16_t addr) const;
     uint8_t read_byte_chr(uint16_t addr) const;
 

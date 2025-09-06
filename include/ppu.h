@@ -10,6 +10,7 @@ public:
     bool run(size_t cycles);
     void draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y);
     void draw_sprite(uint8_t sprite_n);
+    void reset();
     std::array<uint32_t, SCREEN_WIDTH * SCREEN_HEIGHT> framebuffer {};
 private:
     Bus& bus;

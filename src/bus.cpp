@@ -17,9 +17,9 @@ uint16_t Bus::ram_mirror(uint16_t addr) {
 
 uint16_t Bus::vram_mirror(uint16_t addr) const{
     if (in_range(addr, 0, 0x1fff))
-        return addr % rom.chr_size;
+        return addr % rom->chr_size;
 
-    if (rom.nt_mirror == MirrorMode::HORIZONTAL) {
+    if (rom->nt_mirror == MirrorMode::HORIZONTAL) {
         if (in_range(addr, 0x2000, 0x23ff))
             return addr;
         if (in_range(addr, 0x2400, 0x27ff))
@@ -30,7 +30,7 @@ uint16_t Bus::vram_mirror(uint16_t addr) const{
             return addr - 0x400;
     }
 
-    if (rom.nt_mirror == MirrorMode::VERTICAL) {
+    if (rom->nt_mirror == MirrorMode::VERTICAL) {
         if (in_range(addr, 0x2000, 0x23ff))
             return addr;
         if (in_range(addr, 0x2400, 0x27ff))
@@ -81,7 +81,7 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
        TODO: for now, find solution that works for NROM-128 
     */
     if (in_range(addr, 0x8000, 0xffff))
-        return rom.read_byte_prg(addr % 0x4000);
+        return rom->read_byte_prg(addr % 0x4000);
 
     return ram[ram_mirror(addr)];
 };
@@ -166,7 +166,7 @@ void Bus::ram_write_two_bytes(uint16_t addr, uint16_t val) { ram_write_byte(ram_
 
 uint8_t Bus::vram_read_byte(uint16_t addr) const {
     if (in_range(addr, 0x0, 0x1fff))
-        return rom.read_byte_chr(vram_mirror(addr));
+        return rom->read_byte_chr(vram_mirror(addr));
     
     return vram[vram_mirror(addr)];
 };

@@ -9,11 +9,12 @@ namespace GraphicsContext {
     const int window_width = 1024;
     const int window_height = 960;
     extern uint32_t* framebuffer;
-    extern bool done;
     extern SDL_Window* window;
     extern ImVec4 clear_colour;
     extern SDL_Renderer* renderer;
     extern SDL_Texture* texture;
+    extern bool rom_changed;
+    extern char rom_path[1024];
     void display_init();
     void finish();
     void draw();

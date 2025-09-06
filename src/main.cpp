@@ -6,10 +6,9 @@
 
 int main(int argc, char *argv[]) {
     std::ifstream file(argv[1], std::ios::binary);
-    ROM rom(file);
     Controller ctrl;
 
-    NES nes(rom, ctrl);
+    NES nes(new ROM(file), ctrl);
 
     nes.run();
 

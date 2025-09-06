@@ -15,7 +15,7 @@ find_package(imgui CONFIG REQUIRED)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-add_library(nes_emu_core STATIC src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp src/graphics.cpp)
+add_library(nes_emu_core STATIC src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp)
 target_include_directories(nes_emu_core PUBLIC include L2DFileDialog/L2DFileDialog/src)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3 imgui::imgui)
 

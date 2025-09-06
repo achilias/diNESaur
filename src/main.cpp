@@ -1,12 +1,12 @@
-#include <SDL3/SDL_main.h>
 #include <fstream>
 #include <ios>
-#include <SDL3/SDL.h>
 
 #include "cpu.h"
 #include "ppu.h"
 #include "bus.h"
 #include "controller.h"
+
+#include <SDL3/SDL.h>
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
@@ -50,13 +50,11 @@ int main(int argc, char *argv[]) {
         }
     }
         
-    ROM const *rom = nullptr;
-    Bus bus(rom, ctrl);
+    Bus bus(nullptr, ctrl);
     CPU cpu(bus);
     PPU ppu(bus);
 
     bool nmi = false;
-    rom_changed = true;
     while (update(ctrl)) {
         if (rom_changed) {
             std::ifstream file = std::ifstream(rom_path, std::ios::binary);
@@ -134,15 +132,16 @@ bool update(Controller& ctrl) {
         ImGui_ImplSDL3_ProcessEvent(&e);
         if (e.type == SDL_EVENT_QUIT)
             return false;
+
         if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
             return false;
-    
         if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
             int idx;
             switch (e.key.key) {
                 case SDLK_F1:
                     FileDialog::file_dialog_open = true;
                     return true;
+                // TODO: f2 for control config menu etc
                 case SDLK_Z:
                     idx = static_cast<int>(Ctrl_State::SELECT);
                     break;

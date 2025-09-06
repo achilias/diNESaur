@@ -50,3 +50,6 @@ nes-emu/*
 
 # IDE files
 .vs/*
+
+# Misc
+imgui.ini

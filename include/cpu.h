@@ -36,7 +36,6 @@ protected:
 
 	uint16_t get_addr(AddressingMode mode);
 
-    // TODO: use union with anonymous struct instead
     inline void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
     inline bool get_carry() const {return sr & 0x1;}
     inline void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}

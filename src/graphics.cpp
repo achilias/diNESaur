@@ -12,7 +12,7 @@ SDL_Window*   GraphicsContext::window;
 SDL_Renderer* GraphicsContext::renderer;
 SDL_Texture*  GraphicsContext::texture;
 ImVec4        GraphicsContext::clear_colour;
-bool          GraphicsContext::rom_changed;
+bool          GraphicsContext::rom_changed = false;
 char          GraphicsContext::rom_path[1024] = "";
 
 void GraphicsContext::display_init() {

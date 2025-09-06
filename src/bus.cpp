@@ -191,5 +191,3 @@ void Bus::vram_write_two_bytes(uint16_t addr, uint16_t val) { vram_write_byte(vr
 uint8_t Bus::oam_read_byte(uint16_t addr) const {
     return oam[addr];
 }
-
-void Bus::set_mapping(bool map_memory_nes) {this->map_memory_nes = map_memory_nes;}

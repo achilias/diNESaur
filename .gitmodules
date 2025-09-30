@@ -1,6 +1,6 @@
 [submodule "test/65x02"]
 	path = test/65x02
 	url = https://github.com/SingleStepTests/65x02.git
-[submodule "L2DFileDialog"]
-	path = L2DFileDialog
+[submodule "vendor/L2DFileDialog"]
+	path = vendor/L2DFileDialog
 	url = https://github.com/MariosAchilias/L2DFileDialog.git

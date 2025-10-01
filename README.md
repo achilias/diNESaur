@@ -4,6 +4,8 @@ A simple NES emulator written in C++.
 
 ## Building
 ### Linux
+
+Note that vcpkg needs to be installed.
 ```sh
 git clone --recurse-submodules https://github.com/MariosAchilias/diNESaur.git
 cd diNESaur
@@ -11,6 +13,8 @@ cmake -S . -B build/
 make -C build/
 ```
 Run ``./build/dinesaur``
+### Windows
+TODO
 
 ## TODO
 ### High priority

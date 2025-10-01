@@ -41,3 +41,13 @@ TODO
 - **F3** - Create save state
 - **F4** - Load last save state
 - **F5** - Save state selection
+
+## Limitations
+
+Currently:
+- Only runs mapper 0 games
+- No support for unofficial opcodes
+- No PPU scrolling
+- No audio
+- CPU timing is not totally accurate (e.g. no cycle penalties for reads that cross a memory page)
+- Controls are not configurable

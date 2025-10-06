@@ -4,9 +4,9 @@
 
 void CPU::handle_nmi() {
     bus.nmi = false;
-    bus.ram_write_byte(stack_base + sp--, sr | 0x20);  
     bus.ram_write_two_bytes(stack_base + sp, pc); 
     sp -= 2; 
+	bus.ram_write_byte(stack_base + sp--, sr | 0x20);  
     pc = bus.ram_read_two_bytes(0xfffa);
 }
 

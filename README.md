@@ -3,9 +3,9 @@
 A simple NES emulator written in C++.
 
 ## Building
-### Linux
-
 Note that vcpkg needs to be installed.
+
+### Linux
 ```sh
 git clone --recurse-submodules https://github.com/MariosAchilias/diNESaur.git
 cd diNESaur
@@ -14,40 +14,25 @@ make -C build/
 ```
 Run ``./build/dinesaur``
 ### Windows
-TODO
-
-## TODO
-### High priority
-- [ ] Unofficial opcodes
-
-### Middle priority
-- [ ] PPU scrolling
-- [ ] Accurate CPU cycle timing (page cross penalties etc)
-- [ ] Mappers other than 0
-
-### Low priority
-- [ ] APU emulation
-- [ ] Expand and improve GUI
-- [ ] PPU testing for accuracy
-- [ ] Save states
+```powershell
+git clone --recurse-submodules https://github.com/MariosAchilias/diNESaur.git
+cd diNESaur
+cmake -S . -B build/
+```
+Open ``build/dinesaur.sln`` in Visual Studio and build target ``dinesaur``.
 
 ## Menu controls
 
 - **ESC** - Close menu/quit
 - **F1** - ROM selection
 
-### TODO
-- **F2** - Control configuration  
-- **F3** - Create save state
-- **F4** - Load last save state
-- **F5** - Save state selection
-
-## Limitations
-
-Currently:
-- Only runs mapper 0 games
-- No support for unofficial opcodes
-- No PPU scrolling
-- No audio
-- CPU timing is not totally accurate (e.g. no cycle penalties for reads that cross a memory page)
-- Controls are not configurable
+## TODO
+- [ ] Unofficial opcodes
+- [ ] PPU scrolling
+- [ ] Accurate CPU cycle timing (page cross penalties etc)
+- [ ] Mappers other than 0
+- [ ] APU emulation
+- [ ] Expand and improve GUI
+- [ ] PPU testing for accuracy
+- [ ] Save states
+- [ ] Configurable controls

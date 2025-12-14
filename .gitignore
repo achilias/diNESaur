@@ -41,6 +41,7 @@ build/*
 .vscode/settings.json
 vcpkg_installed/*
 .cache/*
+.cmake/*
 
 # Build files
 build/*
@@ -50,6 +51,7 @@ nes-emu/*
 
 # IDE files
 .vs/*
+.idea/*
 
 # Misc
 imgui.ini

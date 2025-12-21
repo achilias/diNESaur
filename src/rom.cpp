@@ -35,16 +35,18 @@ ROM::ROM(std::ifstream &stream) {
     assert(chr_data.size() == chr_size);
 }
 
-
-uint8_t ROM::read_byte_prg(uint16_t addr) const {
-    assert(addr < prg_size);
-    return prg_data[addr];
-};
-
 uint8_t ROM::read_byte_chr(uint16_t addr) const {
-    // printf("(read_byte_chr) ROM: %p\n", this);
     assert(addr >= 0);
     assert(chr_data.size() == chr_size);
     assert(addr < chr_size);
     return chr_data[addr];
 };
+
+uint8_t ROM::read_byte_prg(uint16_t addr) const
+{
+    switch (mapper) {
+        case 0:
+            return prg_data[addr % 0x4000];
+    }
+    return prg_data[addr % 0x4000];
+}

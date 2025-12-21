@@ -63,7 +63,7 @@ public:
     uint16_t ppu_addr{ 0 };
     bool ppu_w_reg{ false };
     bool ignore_ctrl_writes{ true };
-    static uint16_t ram_mirror(uint16_t addr);
+    uint16_t ram_mirror(uint16_t addr);
 
     uint16_t vram_mirror(uint16_t addr) const;
 private:

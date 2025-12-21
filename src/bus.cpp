@@ -7,11 +7,7 @@ uint16_t Bus::ram_mirror(uint16_t addr) {
         return addr & 0x7ff;
     if (in_range(addr, 0x2000, 0x3fff))
         return addr & 0x2007;
-    if (in_range(addr, 0x8000, 0xffff)) {
-        // for 16kb (0x4000) cartridges, upper 16kb of 32kb address space must be mirrored to lower 16kb
-        return addr & 0x3fff;
 
-    }
     return addr;
 }
 
@@ -51,11 +47,9 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
     if (!map_memory_nes)
         return ram[addr];
 
-    if (ram_mirror(addr) > ram.size()) {
-        printf("Out of bounds ram %p\n", ram_mirror(addr));
-
-        exit(0);
-    }
+    // address belongs to cartridge-mapped address space
+    if (in_range(addr, 0x4020, 0xffff))
+        return rom->read_byte_prg(addr);
 
     switch (ram_mirror(addr)) {
         case 0x2002: {
@@ -76,12 +70,6 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
         case 0x4016:
             return ctrl.poll() ? 1 : 0;
     }
-
-    /* TODO: properly handle mapper mirroring / bank switching. 
-       TODO: for now, find solution that works for NROM-128 
-    */
-    if (in_range(addr, 0x8000, 0xffff))
-        return rom->read_byte_prg(addr % 0x4000);
 
     return ram[ram_mirror(addr)];
 };

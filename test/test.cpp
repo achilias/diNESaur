@@ -91,7 +91,6 @@ void TestCPU::test_opcode(std::string opcode) {
 
         json_value_s *init = json_get(test_case, "initial");
 
-        uint16_t pc = json_get(test_case, "pc");
         set_state(json_as_uint(json_get(init, "pc")), json_as_uint(json_get(init, "s")),
                    json_as_uint(json_get(init, "a")), json_as_uint(json_get(init, "x")),
                    json_as_uint(json_get(init, "y")), json_as_uint(json_get(init, "p")));

@@ -1,11 +1,43 @@
 #include "acutest.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
-#include <nlohmann/json.hpp>
+#include <sstream>
+#include "json.h"
 #include "test_cpu.h"
 #include "macros.h"
 
-using json = nlohmann::json;
+namespace {
+
+json_value_s *json_get(json_value_s *value, const char *key) {
+    json_object_s *object = json_value_as_object(value);
+    for (json_object_element_s *element = object->start; element != nullptr; element = element->next) {
+        if (std::strcmp(element->name->string, key) == 0) {
+            return element->value;
+        }
+    }
+    return nullptr;
+}
+
+unsigned long json_as_uint(json_value_s *value) {
+    json_number_s *number = json_value_as_number(value);
+    return std::strtoul(number->number, nullptr, 10);
+}
+
+std::vector<std::tuple<uint16_t, uint8_t>> json_as_ram(json_value_s *value) {
+    std::vector<std::tuple<uint16_t, uint8_t>> result;
+    json_array_s *array = json_value_as_array(value);
+    for (json_array_element_s *element = array->start; element != nullptr; element = element->next) {
+        json_array_s *pair = json_value_as_array(element->value);
+        json_array_element_s *addr_elem = pair->start;
+        json_array_element_s *val_elem = addr_elem->next;
+        result.emplace_back((uint16_t)json_as_uint(addr_elem->value), (uint8_t)json_as_uint(val_elem->value));
+    }
+    return result;
+}
+
+}
 
 void TestCPU::mem_locs_set(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
@@ -43,24 +75,40 @@ void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, 
 
 void TestCPU::test_opcode(std::string opcode) {
     std::ifstream f("../test/65x02/nes6502/v1/" + opcode + ".json");
-    json data = json::parse(f);
-    for(auto test_case = data.begin(); test_case != data.end(); test_case++) {
-        TEST_CASE(std::string((*test_case)["name"]).c_str());
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+    std::string contents = buffer.str();
 
-        auto init = (*test_case)["initial"];
+    json_value_s *root = json_parse(contents.data(), contents.size());
+    TEST_ASSERT(root != nullptr);
 
-        set_state(init["pc"], init["s"], init["a"], init["x"], init["y"], init["p"]);
+    json_array_s *test_cases = json_value_as_array(root);
+    for (json_array_element_s *elem = test_cases->start; elem != nullptr; elem = elem->next) {
+        json_value_s *test_case = elem->value;
 
-        mem_locs_set(init["ram"]);
+        json_string_s *name = json_value_as_string(json_get(test_case, "name"));
+        TEST_CASE(name->string);
+
+        json_value_s *init = json_get(test_case, "initial");
+
+        uint16_t pc = json_get(test_case, "pc");
+        set_state(json_as_uint(json_get(init, "pc")), json_as_uint(json_get(init, "s")),
+                   json_as_uint(json_get(init, "a")), json_as_uint(json_get(init, "x")),
+                   json_as_uint(json_get(init, "y")), json_as_uint(json_get(init, "p")));
+
+        mem_locs_set(json_as_ram(json_get(init, "ram")));
 
         execute_instr();
 
-        auto final = (*test_case)["final"];
+        json_value_s *final = json_get(test_case, "final");
 
-        test_state(final["pc"], final["s"], final["a"], final["x"], final["y"], final["p"]);
-        mem_locs_test(final["ram"]);
-
+        test_state(json_as_uint(json_get(final, "pc")), json_as_uint(json_get(final, "s")),
+                    json_as_uint(json_get(final, "a")), json_as_uint(json_get(final, "x")),
+                    json_as_uint(json_get(final, "y")), json_as_uint(json_get(final, "p")));
+        mem_locs_test(json_as_ram(json_get(final, "ram")));
     }
+
+    std::free(root);
 }
 
 MAKE_OPCODE_TESTS(ADC, 69, 65, 75, 6d, 7d, 79, 61, 71);

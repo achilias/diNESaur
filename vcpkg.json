@@ -1,6 +1,5 @@
 {
   "dependencies": [
-    "sdl3",
     "nlohmann-json",
     "gtest"
   ]

@@ -32,15 +32,12 @@ add_executable(nes_emu src/main.cpp)
 
 
 if (APPLE)
-    set(MACOSX_BUNDLE_ICON_FILE dinesaur.icns)
-    set(APP_ICON_MACOSX ${CMAKE_CURRENT_SOURCE_DIR}/resources/dinesaur.icns)
     set_target_properties(nes_emu PROPERTIES
             MACOSX_BUNDLE TRUE
             MACOSX_BUNDLE_GUI_IDENTIFIER "com.mariosachilias.diNESaur"
             MACOSX_BUNDLE_BUNDLE_NAME "diNESaur"
             MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
-            RESOURCE "${APP_ICON_MACOSX}"
     )
 endif()
 

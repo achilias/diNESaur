@@ -10,8 +10,6 @@ set(CMAKE_CXX_FLAGS "-Wall")
 
 include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 
-find_package(nlohmann_json CONFIG REQUIRED)
-
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
@@ -59,5 +57,5 @@ SDL3::SDL3-static
 enable_testing()
 
 add_executable(nes_emu_test test/test.cpp)
-target_link_libraries(nes_emu_test nes_emu_core nlohmann_json::nlohmann_json)
+target_link_libraries(nes_emu_test nes_emu_core)
 add_test(NAME nes_emu_test COMMAND nes_emu_test)

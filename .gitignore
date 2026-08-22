@@ -39,7 +39,6 @@ test/json_tests/*
 # CMake files
 build/*
 .vscode/settings.json
-vcpkg_installed/*
 .cache/*
 .cmake/*
 

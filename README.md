@@ -3,7 +3,6 @@
 A simple NES emulator written in C++.
 
 ## Building
-Note that vcpkg needs to be installed.
 
 ### Linux
 ```sh

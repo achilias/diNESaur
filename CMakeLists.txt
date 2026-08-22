@@ -13,13 +13,24 @@ include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 find_package(GTest CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
+add_library(imgui STATIC
+        vendor/imgui/imgui.cpp
+        vendor/imgui/imgui_demo.cpp
+        vendor/imgui/imgui_draw.cpp
+        vendor/imgui/imgui_tables.cpp
+        vendor/imgui/imgui_widgets.cpp
+        vendor/imgui/backends/imgui_impl_sdl3.cpp
+        vendor/imgui/backends/imgui_impl_sdlrenderer3.cpp
+)
+target_include_directories(imgui PUBLIC vendor/imgui vendor/imgui/backends)
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
+
 add_library(nes_emu_core STATIC src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp)
 target_include_directories(nes_emu_core PUBLIC include vendor/L2DFileDialog/L2DFileDialog/src)
-target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3 imgui::imgui)
+target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3 imgui)
 
 add_executable(nes_emu src/main.cpp)
 
@@ -40,6 +51,7 @@ endif()
 
 target_link_libraries(nes_emu PRIVATE
 nes_emu_core
+imgui
 SDL3::SDL3-static
 )
 

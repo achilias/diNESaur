@@ -128,12 +128,12 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 }
 
 void PPU::draw_sprite(uint8_t sprite_n) {
-	uint8_t base_y = bus.oam_read_byte(sprite_n * 4);
-	uint16_t tile_idx = bus.oam_read_byte(sprite_n * 4 + 1);
+	uint8_t base_y = bus.oam[sprite_n * 4];
+	uint16_t tile_idx = bus.oam[sprite_n * 4 + 1];
 	if (PPUCTRL_SPRITE_SZ(bus.ppu_ctrl))
 		printf("Attempted to draw 8x16 sprite. This is unimplemented!\n");
-	uint16_t attr = bus.oam_read_byte(sprite_n * 4 + 2);
-	uint8_t base_x = bus.oam_read_byte(sprite_n * 4 + 3);
+	uint16_t attr = bus.oam[sprite_n * 4 + 2];
+	uint8_t base_x = bus.oam[sprite_n * 4 + 3];
 
 	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(bus.ppu_ctrl)];
 	bool flip_hrz = (attr & 0b01000000) != 0;

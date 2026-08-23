@@ -17,7 +17,6 @@
 class Bus {
 public:
     Bus(ROM const *rom, Controller *controller) : rom(rom), controller(controller) {};
-    uint8_t ram_read_byte(uint16_t addr);
     uint16_t ram_read_two_bytes(uint16_t addr);
     void ram_write_byte(uint16_t addr, uint8_t val);
     void ram_write_two_bytes(uint16_t addr, uint16_t val);
@@ -63,16 +62,10 @@ public:
     uint16_t ppu_addr{ 0 };
     bool ppu_w_reg{ false };
     bool ignore_ctrl_writes{ true };
-    uint16_t ram_mirror(uint16_t addr);
 
-    uint16_t vram_mirror(uint16_t addr) const;
-private:
     std::array<uint8_t, RAM_SIZE> ram {};
     std::array<uint8_t, VRAM_SIZE> vram {};
     std::array<uint8_t, OAM_SIZE> oam {};
-
-
-
-    static bool in_range(uint16_t addr, uint16_t start, uint16_t end) {return addr >= start && addr <= end;};
-
 };
+
+uint8_t ram_read_byte(Bus *bus, uint16_t addr);

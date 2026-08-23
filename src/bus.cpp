@@ -2,7 +2,12 @@
 
 #include <cassert>
 
-uint16_t Bus::ram_mirror(uint16_t addr) {
+bool in_range(uint16_t addr, uint16_t start, uint16_t end)
+{
+    return addr >= start && addr <= end;
+};
+
+uint16_t ram_mirror(uint16_t addr) {
     if (in_range(addr, 0x0, 0x1fff))
         return addr & 0x7ff;
     if (in_range(addr, 0x2000, 0x3fff))
@@ -11,7 +16,7 @@ uint16_t Bus::ram_mirror(uint16_t addr) {
     return addr;
 }
 
-uint16_t Bus::vram_mirror(uint16_t addr) const{
+uint16_t vram_mirror(uint16_t addr, ROM const *rom) {
     if (in_range(addr, 0, 0x1fff))
         return addr % rom->chr_size;
 
@@ -43,38 +48,38 @@ uint16_t Bus::vram_mirror(uint16_t addr) const{
 }
 
 
-uint8_t Bus::ram_read_byte(uint16_t addr) {
-    if (!map_memory_nes)
-        return ram[addr];
+uint8_t ram_read_byte(Bus *bus, uint16_t addr) {
+    if (!bus->map_memory_nes)
+        return bus->ram[addr];
 
     // address belongs to cartridge-mapped address space
     if (in_range(addr, 0x4020, 0xffff))
-        return rom->read_byte_prg(addr);
+        return bus->rom->read_byte_prg(addr);
 
     switch (ram_mirror(addr)) {
         case 0x2002: {
-            uint8_t tmp = ppu_status;
-            PPUSTATUS_SET_VBLANK(ppu_status, false);
-            ppu_w_reg = false;
+            uint8_t tmp = bus->ppu_status;
+            PPUSTATUS_SET_VBLANK(bus->ppu_status, false);
+            bus->ppu_w_reg = false;
             return tmp;
         }
         case 0x2004:
             /* TODO: reads to OAMDATA should have different behavior during rendering
              * (i.e. not during vblanks), few games use this, but should be handled for accuracy. */
-            return oam[oam_addr];
+            return bus->oam[bus->oam_addr];
         case 0x2007: {
-            uint16_t old = ppu_addr;
-            ppu_addr += PPUCTRL_INCR(ppu_ctrl) ? 32 : 1;
-            return vram_read_byte(old);
+            uint16_t old = bus->ppu_addr;
+            bus->ppu_addr += PPUCTRL_INCR(bus->ppu_ctrl) ? 32 : 1;
+            return bus->vram_read_byte(old);
         }
         case 0x4016:
-            return controller_read_serial_bit(controller) ? 1 : 0;
+            return controller_read_serial_bit(bus->controller) ? 1 : 0;
     }
 
-    return ram[ram_mirror(addr)];
+    return bus->ram[ram_mirror(addr)];
 };
 
-uint16_t Bus::ram_read_two_bytes(uint16_t addr) { return (((uint16_t) ram_read_byte(addr + 1)) << 8) | ram_read_byte(addr); };
+uint16_t Bus::ram_read_two_bytes(uint16_t addr) { return (((uint16_t) ram_read_byte(this, addr + 1)) << 8) | ram_read_byte(this, addr); };
 
 void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
     if (!map_memory_nes) {
@@ -135,7 +140,7 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             {
                 uint16_t page_start = ((uint16_t) val) << 8;
                 for (int i = 0; i < 256; i++)
-                    oam[oam_addr++] = ram_read_byte(page_start + i);
+                    oam[oam_addr++] = ram_read_byte(this, page_start + i);
                 return;
             }
         case 0x4016:
@@ -152,17 +157,17 @@ void Bus::ram_write_two_bytes(uint16_t addr, uint16_t val) { ram_write_byte(ram_
 
 uint8_t Bus::vram_read_byte(uint16_t addr) const {
     if (in_range(addr, 0x0, 0x1fff))
-        return rom->read_byte_chr(vram_mirror(addr));
+        return rom->read_byte_chr(vram_mirror(addr, rom));
     
-    return vram[vram_mirror(addr)];
+    return vram[vram_mirror(addr, rom)];
 };
 
 
-uint16_t Bus::vram_read_two_bytes(uint16_t addr) const { return ((uint16_t) vram[vram_mirror(addr + 1)]) << 8 | vram[vram_mirror(addr)]; };
+uint16_t Bus::vram_read_two_bytes(uint16_t addr) const { return ((uint16_t) vram[vram_mirror(addr + 1, rom)]) << 8 | vram[vram_mirror(addr, rom)]; };
 
 
 void Bus::vram_write_byte(uint16_t addr, uint8_t val) { 
-    addr = vram_mirror(addr);
+    addr = vram_mirror(addr, rom);
     if (addr > vram.size()) {
         printf("Out of bounds vram %p\n", addr);
 
@@ -172,8 +177,4 @@ void Bus::vram_write_byte(uint16_t addr, uint8_t val) {
 };
 
 
-void Bus::vram_write_two_bytes(uint16_t addr, uint16_t val) { vram_write_byte(vram_mirror(addr), (uint8_t) (val & 0xFF)); vram_write_byte(vram_mirror(addr) + 1, (uint8_t) (val >> 8)); };
-
-uint8_t Bus::oam_read_byte(uint16_t addr) const {
-    return oam[addr];
-}
+void Bus::vram_write_two_bytes(uint16_t addr, uint16_t val) { vram_write_byte(vram_mirror(addr, rom), (uint8_t) (val & 0xFF)); vram_write_byte(vram_mirror(addr, rom) + 1, (uint8_t) (val >> 8)); };

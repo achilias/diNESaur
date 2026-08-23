@@ -15,36 +15,6 @@
 #define SCREEN_HEIGHT 240
 
 class Bus {
-public:
-    Bus(ROM const *rom, Controller *controller) : rom(rom), controller(controller) {};
-    uint16_t ram_read_two_bytes(uint16_t addr);
-    void ram_write_byte(uint16_t addr, uint8_t val);
-    void ram_write_two_bytes(uint16_t addr, uint16_t val);
-
-    uint8_t vram_read_byte(uint16_t addr) const;
-    uint16_t vram_read_two_bytes(uint16_t addr) const;
-    void vram_write_byte(uint16_t addr, uint8_t val);
-    void vram_write_two_bytes(uint16_t addr, uint16_t val);
-
-    uint8_t oam_read_byte(uint16_t addr) const;
-
-    void set_mapping(bool map_memory_nes);
-
-    inline void reset() {
-        std::fill(ram.begin(), ram.end(), 0);
-        std::fill(vram.begin(), vram.end(), 0);
-        std::fill(oam.begin(), oam.end(), 0);
-        nmi = false;
-        catchup_cycles = 0;
-        ppu_ctrl = 0;
-        ppu_mask = 0;
-        ppu_status = 0;
-        oam_addr = 0;
-        ppu_addr = 0;
-        ppu_w_reg = false;
-        ignore_ctrl_writes = true;
-    }
-
     ROM const *rom;
     Controller *controller;
 
@@ -69,3 +39,11 @@ public:
 };
 
 uint8_t ram_read_byte(Bus *bus, uint16_t addr);
+uint16_t ram_read_two_bytes(Bus *bus, uint16_t addr);
+void ram_write_byte(Bus *bus, uint16_t addr, uint8_t val);
+void ram_write_two_bytes(Bus *bus, uint16_t addr, uint16_t val);
+void vram_write_byte(Bus *bus, uint16_t addr, uint8_t val);
+void vram_write_two_bytes(Bus *bus, uint16_t addr, uint16_t val);
+uint8_t vram_read_byte(Bus *bus, uint16_t addr);
+uint16_t vram_read_two_bytes(Bus *bus, uint16_t addr);
+void bus_init(Bus *bus, ROM const *rom, Controller *controller);

@@ -41,7 +41,7 @@ std::vector<std::tuple<uint16_t, uint8_t>> json_as_ram(json_value_s *value) {
 
 void TestCPU::mem_locs_set(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
-        bus.ram_write_byte(std::get<0>(*iter), std::get<1>(*iter));
+        ram_write_byte(&bus, std::get<0>(*iter), std::get<1>(*iter));
     }
 }
 

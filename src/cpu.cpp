@@ -4,10 +4,10 @@
 
 void CPU::handle_nmi() {
     bus.nmi = false;
-    bus.ram_write_byte(stack_base + sp--, sr | 0x20);  
-    bus.ram_write_two_bytes(stack_base + sp, pc); 
+    ram_write_byte(&bus, stack_base + sp--, sr | 0x20);
+    ram_write_two_bytes(&bus, stack_base + sp, pc);
     sp -= 2; 
-    pc = bus.ram_read_two_bytes(0xfffa);
+    pc = ram_read_two_bytes(&bus, 0xfffa);
 }
 
 void cpu_reset(CPU *cpu) {
@@ -16,7 +16,7 @@ void cpu_reset(CPU *cpu) {
     cpu->reg_x = 0;
     cpu->reg_y = 0;
     cpu->sr = 0;
-    cpu->pc = cpu->bus.ram_read_two_bytes(0xfffc);
+    cpu->pc = ram_read_two_bytes(&cpu->bus, 0xfffc);
 }
 
 uint16_t CPU::get_addr(AddressingMode mode) {
@@ -29,15 +29,15 @@ uint16_t CPU::get_addr(AddressingMode mode) {
 			return pc++;
 		case AddressingMode::indirect:
 		case AddressingMode::absolute:
-			tmp_u16 = bus.ram_read_two_bytes(pc);
+			tmp_u16 = ram_read_two_bytes(&bus, pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_x:
-			tmp_u16 = reg_x + bus.ram_read_two_bytes(pc);
+			tmp_u16 = reg_x + ram_read_two_bytes(&bus, pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_y:
-			tmp_u16 = reg_y + bus.ram_read_two_bytes(pc);
+			tmp_u16 = reg_y + ram_read_two_bytes(&bus, pc);
 			pc += 2;
 			return tmp_u16;
 		case AddressingMode::zero_page:
@@ -94,7 +94,7 @@ void CPU::asl(AddressingMode addr_mode){
 	uint8_t operand = ram_read_byte(&bus, addr);
     set_carry(operand & 0x80);
     uint8_t tmp = operand << 1;
-	bus.ram_write_byte(addr, tmp);
+	ram_write_byte(&bus, addr, tmp);
     set_zero(tmp == 0);
     set_negative(tmp & 0x80);
 }
@@ -144,11 +144,11 @@ void CPU::bpl() {
 }
 
 void CPU::brk() {
-	bus.ram_write_byte(stack_base + sp--, ++pc >> 8);
-	bus.ram_write_byte(stack_base + sp--, pc & 0xff);
-	bus.ram_write_byte(stack_base + sp--, sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
+	ram_write_byte(&bus, stack_base + sp--, ++pc >> 8);
+	ram_write_byte(&bus, stack_base + sp--, pc & 0xff);
+	ram_write_byte(&bus, stack_base + sp--, sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
 	set_disable_interrupt(1);
-	pc = bus.ram_read_two_bytes(0xfffe); // address of irq interrupt handler
+	pc = ram_read_two_bytes(&bus, 0xfffe); // address of irq interrupt handler
 }
 
 void CPU::bvc() {
@@ -208,7 +208,7 @@ void CPU::dec(AddressingMode addr_mode) {
 	uint8_t tmp = ram_read_byte(&bus, addr) - 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	bus.ram_write_byte(addr, tmp);
+	ram_write_byte(&bus, addr, tmp);
 }
 
 void CPU::dex() {
@@ -232,7 +232,7 @@ void CPU::inc(AddressingMode addr_mode) {
 	uint8_t tmp = ram_read_byte(&bus, addr) + 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	bus.ram_write_byte(addr, tmp);
+	ram_write_byte(&bus, addr, tmp);
 }
 
 void CPU::inx() {
@@ -254,13 +254,13 @@ void CPU::jmp(AddressingMode addr_mode) {
         pc = (((uint16_t) ram_read_byte(&bus, addr & 0xff00)) << 8) | ram_read_byte(&bus, addr);
         return;
     }
-	pc = addr_mode == AddressingMode::indirect ? bus.ram_read_two_bytes(addr) : addr;
+	pc = addr_mode == AddressingMode::indirect ? ram_read_two_bytes(&bus, addr) : addr;
 }
 
 void CPU::jsr() {
-	uint16_t addr = bus.ram_read_two_bytes(pc++);
-	bus.ram_write_byte(stack_base + sp--, pc >> 8);
-	bus.ram_write_byte(stack_base + sp--, pc & 0xff);
+	uint16_t addr = ram_read_two_bytes(&bus, pc++);
+	ram_write_byte(&bus, stack_base + sp--, pc >> 8);
+	ram_write_byte(&bus, stack_base + sp--, pc & 0xff);
 	pc = addr;
 }
 
@@ -296,7 +296,7 @@ void CPU::lsr(AddressingMode addr_mode) {
 	tmp = tmp >> 1;
 	set_zero(tmp == 0);
 	set_negative(tmp & 0x80);
-	bus.ram_write_byte(addr, tmp);
+	ram_write_byte(&bus, addr, tmp);
 }
 
 void CPU::ora(AddressingMode addr_mode) {
@@ -306,11 +306,11 @@ void CPU::ora(AddressingMode addr_mode) {
 }
 
 void CPU::pha() {
-	bus.ram_write_byte(stack_base + sp--, accum);
+	ram_write_byte(&bus, stack_base + sp--, accum);
 }
 
 void CPU::php() {
-	bus.ram_write_byte(stack_base + sp--, sr | 0x30);
+	ram_write_byte(&bus, stack_base + sp--, sr | 0x30);
 }
 
 void CPU::pla() {
@@ -339,7 +339,7 @@ void CPU::rol(AddressingMode addr_mode) {
 	set_carry(tmp & 0x80);
 	set_zero(tmp_ == 0);
 	set_negative(tmp_ & 0x80);
-	bus.ram_write_byte(addr, tmp_);
+	ram_write_byte(&bus, addr, tmp_);
 }
 
 void CPU::ror(AddressingMode addr_mode) {
@@ -357,7 +357,7 @@ void CPU::ror(AddressingMode addr_mode) {
 	set_carry(tmp & 0x1);
 	set_zero(tmp_ == 0);
 	set_negative(tmp_ & 0x80);
-	bus.ram_write_byte(addr, tmp_);
+	ram_write_byte(&bus, addr, tmp_);
 }
 
 void CPU::rti() {
@@ -398,17 +398,17 @@ void CPU::sei() {
 
 void CPU::sta(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	bus.ram_write_byte(addr, accum);
+	ram_write_byte(&bus, addr, accum);
 }
 
 void CPU::stx(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	bus.ram_write_byte(addr, reg_x);
+	ram_write_byte(&bus, addr, reg_x);
 }
 
 void CPU::sty(AddressingMode addr_mode) {
 	uint16_t addr = get_addr(addr_mode);
-	bus.ram_write_byte(addr, reg_y);
+	ram_write_byte(&bus, addr, reg_y);
 }
 
 void CPU::tax() {

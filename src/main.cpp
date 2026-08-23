@@ -23,9 +23,12 @@ int main(int argc, char *argv[]) {
 
     Controller controller;
     controller_init(&controller);
-    Bus bus(nullptr, &controller);
+
     std::ifstream file = std::ifstream(argv[1], std::ios::binary);
-    bus.rom = new ROM(file);
+    ROM *rom = new ROM(file);
+
+    Bus bus;
+    bus_init(&bus, rom, &controller);
     CPU cpu(bus);
     PPU ppu(bus);
 

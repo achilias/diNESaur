@@ -85,7 +85,7 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 	uint16_t nt_x = tile_n % 32;
 	uint16_t at_idx = (nt_y / 4 )* 8 + nt_x / 4;
 
-	uint8_t at_byte = bus.vram_read_byte(at_start + at_idx);
+	uint8_t at_byte = vram_read_byte(&bus, at_start + at_idx);
 	if (((nt_x % 4) / 2) == 0) {
 		if (((nt_y % 4) / 2) == 0)
 			return ATTR_TB_BYTE_TOP_LEFT(at_byte);
@@ -105,15 +105,15 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 
 void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
-	uint16_t pt_tile_offset = bus.vram_read_byte(nt_base[PPUCTRL_NT(bus.ppu_ctrl)] + tile_n) * 16;
+	uint16_t pt_tile_offset = vram_read_byte(&bus, nt_base[PPUCTRL_NT(bus.ppu_ctrl)] + tile_n) * 16;
 
 	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(bus.ppu_ctrl)];
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
-			uint8_t lsb = 0 == (bus.vram_read_byte(tile_start + y) & (0x80 >> x))
+			uint8_t lsb = 0 == (vram_read_byte(&bus, tile_start + y) & (0x80 >> x))
 						? 0 : 1;
-			uint8_t msb = 0 == (bus.vram_read_byte(tile_start + y + 8) & (0x80 >> x))
+			uint8_t msb = 0 == (vram_read_byte(&bus, tile_start + y + 8) & (0x80 >> x))
 						? 0 : 1;
 
 			uint8_t offset = 0;
@@ -121,7 +121,7 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 			PAL_OFFSET_PALETTE_SET(offset, attr_tb_lookup(tile_n));
 			PAL_OFFSET_BG_SPR_SET(offset, false);
 
-			uint32_t colour = palette[bus.vram_read_byte(BG_PALETTES_BASE + offset)];
+			uint32_t colour = palette[vram_read_byte(&bus, BG_PALETTES_BASE + offset)];
 
 			set_pixel(framebuffer.data(), base_x + x, base_y + y, colour);
 		}
@@ -143,9 +143,9 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
-			uint8_t lsb = 0 == (bus.vram_read_byte(tile_start + y) & (0x80 >> x))
+			uint8_t lsb = 0 == (vram_read_byte(&bus, tile_start + y) & (0x80 >> x))
 						? 0 : 1;
-			uint8_t msb = 0 == (bus.vram_read_byte(tile_start + y + 8) & (0x80 >> x))
+			uint8_t msb = 0 == (vram_read_byte(&bus, tile_start + y + 8) & (0x80 >> x))
 						? 0 : 1;
 
 			uint16_t palette_offset = (msb << 1) | lsb;
@@ -153,7 +153,7 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 			if (!palette_offset)
 				continue;
 			
-			uint32_t colour = palette[bus.vram_read_byte(palette_base + palette_offset)];
+			uint32_t colour = palette[vram_read_byte(&bus, palette_base + palette_offset)];
 
 			uint32_t pix_x = flip_hrz ? base_x + 7 - x : base_x + x;
 			uint32_t pix_y = flip_vrt ? base_y + 7 - y : base_y + y;

@@ -23,8 +23,6 @@ SDL_Window* window;
 ImVec4 clear_colour;
 SDL_Renderer* renderer;
 SDL_Texture* texture;
-bool rom_changed = true;
-char rom_path[FILE_PATH_MAX_LENGTH] = "";
 void display_init();
 void display_finish();
 void draw();
@@ -35,36 +33,22 @@ int main(int argc, char *argv[]) {
     Controller ctrl;
     display_init();
     
-    if (argc > 1) {
-        strncpy(rom_path, argv[1], FILE_PATH_MAX_LENGTH);
-    } else {
-        FileDialog::file_dialog_open = true;
-        bool escape_pressed = !update(ctrl);
-        while (!escape_pressed && strlen(rom_path) == 0) {
-            draw();
-            escape_pressed = !update(ctrl);
-        }
-        if (escape_pressed) {
-            display_finish();
-            exit(0);
-        }
+    if (argc < 2) {
+        printf("Usage: %s rom_path\n", argv[0]);
+        return 1;
     }
-        
+
     Bus bus(nullptr, ctrl);
+    std::ifstream file = std::ifstream(argv[1], std::ios::binary);
+    bus.rom = new ROM(file);
     CPU cpu(bus);
     PPU ppu(bus);
+    cpu.reset();
+    bus.reset();
+    ppu.reset();
 
     bool nmi = false;
     while (update(ctrl)) {
-        if (rom_changed) {
-            std::ifstream file = std::ifstream(rom_path, std::ios::binary);
-            bus.rom = new ROM(file);
-            cpu.reset();
-            bus.reset();
-            ppu.reset();
-            rom_changed = false;
-        }
-
         size_t cycles = 0;
         if (nmi) {
             cpu.handle_nmi();
@@ -108,13 +92,6 @@ void draw() {
     ImGui::Begin("Emulator", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::Image((ImTextureID)texture, ImVec2(window_width, window_height));
     ImGui::End();
-
-    if (FileDialog::file_dialog_open) {
-        strcpy(rom_path, "");
-        FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, rom_path, sizeof(rom_path), FileDialog::file_dialog_open_type);
-        if (strlen(rom_path))   // "Cancel" writes empty string to the buffer
-            rom_changed = true;
-    }
 
     ImGui::PopStyleVar(2);
 

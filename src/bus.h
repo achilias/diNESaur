@@ -15,6 +15,7 @@
 #define SCREEN_HEIGHT 240
 
 class Bus {
+public:
     ROM const *rom;
     Controller *controller;
 

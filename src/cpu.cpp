@@ -19,430 +19,430 @@ void cpu_reset(CPU *cpu) {
     cpu->pc = ram_read_two_bytes(&cpu->bus, 0xfffc);
 }
 
-uint16_t CPU::get_addr(AddressingMode mode) {
+uint16_t get_addr(CPU *cpu, AddressingMode mode) {
 	switch (mode) {
 		uint16_t tmp_u16;
 
 		// used for zero page & indirect addressing to utilize default unsigned wraparound overflow behavior
 		uint8_t tmp_u8;
 		case AddressingMode::immediate:
-			return pc++;
+			return cpu->pc++;
 		case AddressingMode::indirect:
 		case AddressingMode::absolute:
-			tmp_u16 = ram_read_two_bytes(&bus, pc);
-			pc += 2;
+			tmp_u16 = ram_read_two_bytes(&cpu->bus, cpu->pc);
+			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_x:
-			tmp_u16 = reg_x + ram_read_two_bytes(&bus, pc);
-			pc += 2;
+			tmp_u16 = cpu->reg_x + ram_read_two_bytes(&cpu->bus, cpu->pc);
+			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_y:
-			tmp_u16 = reg_y + ram_read_two_bytes(&bus, pc);
-			pc += 2;
+			tmp_u16 = cpu->reg_y + ram_read_two_bytes(&cpu->bus, cpu->pc);
+			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::zero_page:
-			return ram_read_byte(&bus, pc++);
+			return ram_read_byte(&cpu->bus, cpu->pc++);
 		case AddressingMode::zero_page_idx_x:
-			tmp_u8 = reg_x + ram_read_byte(&bus, pc++);
+			tmp_u8 = cpu->reg_x + ram_read_byte(&cpu->bus, cpu->pc++);
 			return tmp_u8;
 		case AddressingMode::zero_page_idx_y:
-			tmp_u8 = reg_y + ram_read_byte(&bus, pc++);
+			tmp_u8 = cpu->reg_y + ram_read_byte(&cpu->bus, cpu->pc++);
 			return tmp_u8;
 		case AddressingMode::indirect_idx_x:
-			tmp_u8 = reg_x + ram_read_byte(&bus, pc++);
-			tmp_u16 = ram_read_byte(&bus, tmp_u8++);
-			tmp_u16 += ram_read_byte(&bus, tmp_u8) << 8;
+			tmp_u8 = cpu->reg_x + ram_read_byte(&cpu->bus, cpu->pc++);
+			tmp_u16 = ram_read_byte(&cpu->bus, tmp_u8++);
+			tmp_u16 += ram_read_byte(&cpu->bus, tmp_u8) << 8;
 			return tmp_u16;
 		case AddressingMode::indirect_idx_y:
-			tmp_u8 = ram_read_byte(&bus, pc++);
-			tmp_u16 = ram_read_byte(&bus, tmp_u8++);
-			tmp_u16 += (ram_read_byte(&bus, tmp_u8) << 8) + reg_y;
+			tmp_u8 = ram_read_byte(&cpu->bus, cpu->pc++);
+			tmp_u16 = ram_read_byte(&cpu->bus, tmp_u8++);
+			tmp_u16 += (ram_read_byte(&cpu->bus, tmp_u8) << 8) + cpu->reg_y;
 			return tmp_u16;
         default:
             return 0;
 	}
 }
 
-bool CPU::adc(AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&bus, get_addr(addr_mode));
-	uint16_t result = accum + operand + get_carry();
-	set_carry(result > 0xff);
+bool adc(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint16_t result = cpu->accum + operand + cpu->get_carry();
+	cpu->set_carry(result > 0xff);
 	result = (uint8_t) result;
-	set_overflow((result ^ accum) & (result ^ operand) & 0x80);
-	accum = result;
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+	cpu->set_overflow((result ^ cpu->accum) & (result ^ operand) & 0x80);
+	cpu->accum = result;
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
     return false;
 }
 
-bool CPU::and_(AddressingMode addr_mode) {
-	accum &= ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+bool and_(CPU *cpu, AddressingMode addr_mode) {
+	cpu->accum &= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
     return false;
 }
 
-void CPU::asl(AddressingMode addr_mode){
+void asl(CPU *cpu, AddressingMode addr_mode){
 	if (addr_mode == AddressingMode::accumulator) {
-		set_carry(accum & 0x80);
-		accum = accum << 1;
-		set_zero(accum == 0);
-		set_negative(accum & 0x80);
+		cpu->set_carry(cpu->accum & 0x80);
+		cpu->accum = cpu->accum << 1;
+		cpu->set_zero(cpu->accum == 0);
+		cpu->set_negative(cpu->accum & 0x80);
 		return;
 	}
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t operand = ram_read_byte(&bus, addr);
-    set_carry(operand & 0x80);
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t operand = ram_read_byte(&cpu->bus, addr);
+    cpu->set_carry(operand & 0x80);
     uint8_t tmp = operand << 1;
-	ram_write_byte(&bus, addr, tmp);
-    set_zero(tmp == 0);
-    set_negative(tmp & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp);
+    cpu->set_zero(tmp == 0);
+    cpu->set_negative(tmp & 0x80);
 }
 
-void CPU::bcc() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if (!get_carry())
-		pc += offset;
+void bcc(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if (!cpu->get_carry())
+		cpu->pc += offset;
 }
 
-void CPU::bcs() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if (get_carry())
-		pc += offset;
+void bcs(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if (cpu->get_carry())
+		cpu->pc += offset;
 }
 
-void CPU::beq() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(get_zero())
-		pc += offset;
+void beq(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(cpu->get_zero())
+		cpu->pc += offset;
 }
 
-void CPU::bit(AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&bus, get_addr(addr_mode));
-	uint8_t tmp = accum & operand;
-	set_zero(tmp == 0);
-	set_overflow(operand & 0x40);
-	set_negative(operand & 0x80);
+void bit(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t tmp = cpu->accum & operand;
+	cpu->set_zero(tmp == 0);
+	cpu->set_overflow(operand & 0x40);
+	cpu->set_negative(operand & 0x80);
 }
 
-void CPU::bmi() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(get_negative())
-		pc += offset;
+void bmi(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(cpu->get_negative())
+		cpu->pc += offset;
 }
 
-void CPU::bne() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(!get_zero())
-		pc += offset;
+void bne(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(!cpu->get_zero())
+		cpu->pc += offset;
 }
 
-void CPU::bpl() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(!get_negative())
-		pc += offset;
+void bpl(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(!cpu->get_negative())
+		cpu->pc += offset;
 }
 
-void CPU::brk() {
-	ram_write_byte(&bus, stack_base + sp--, ++pc >> 8);
-	ram_write_byte(&bus, stack_base + sp--, pc & 0xff);
-	ram_write_byte(&bus, stack_base + sp--, sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
-	set_disable_interrupt(1);
-	pc = ram_read_two_bytes(&bus, 0xfffe); // address of irq interrupt handler
+void brk(CPU *cpu) {
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, ++cpu->pc >> 8);
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
+	cpu->set_disable_interrupt(1);
+	cpu->pc = ram_read_two_bytes(&cpu->bus, 0xfffe); // address of irq interrupt handler
 }
 
-void CPU::bvc() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(!get_overflow())
-		pc += offset;
+void bvc(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(!cpu->get_overflow())
+		cpu->pc += offset;
 }
 
-void CPU::bvs() {
-	auto offset = (int8_t) ram_read_byte(&bus, pc++);
-	if(get_overflow())
-		pc += offset;
+void bvs(CPU *cpu) {
+	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	if(cpu->get_overflow())
+		cpu->pc += offset;
 }
 
-void CPU::clc() {
-	set_carry(0);
+void clc(CPU *cpu) {
+	cpu->set_carry(0);
 }
 
-void CPU::cld() {
-	sr &= ~0x8;
+void cld(CPU *cpu) {
+	cpu->sr &= ~0x8;
 }
 
-void CPU::cli() {
-	set_disable_interrupt(0);
+void cli(CPU *cpu) {
+	cpu->set_disable_interrupt(0);
 }
 
-void CPU::clv() {
-	set_overflow(0);
+void clv(CPU *cpu) {
+	cpu->set_overflow(0);
 }
 
-void CPU::cmp(AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&bus, get_addr(addr_mode));
-	set_carry(accum >= operand);
-	auto result = (int8_t) (accum - operand);
-	set_zero(result == 0);
-	set_negative(result < 0);
+void cmp(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_carry(cpu->accum >= operand);
+	auto result = (int8_t) (cpu->accum - operand);
+	cpu->set_zero(result == 0);
+	cpu->set_negative(result < 0);
 }
 
-void CPU::cpx(AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&bus, get_addr(addr_mode));
-	set_carry(reg_x >= operand);
-	auto result = (int8_t) (reg_x - operand);
-	set_zero(result == 0);
-	set_negative(result < 0);
+void cpx(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_carry(cpu->reg_x >= operand);
+	auto result = (int8_t) (cpu->reg_x - operand);
+	cpu->set_zero(result == 0);
+	cpu->set_negative(result < 0);
 }
 
-void CPU::cpy(AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&bus, get_addr(addr_mode));
-	set_carry(reg_y >= operand);
-	auto result = (int8_t) (reg_y - operand);
-	set_zero(result == 0);
-	set_negative(result < 0);
+void cpy(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_carry(cpu->reg_y >= operand);
+	auto result = (int8_t) (cpu->reg_y - operand);
+	cpu->set_zero(result == 0);
+	cpu->set_negative(result < 0);
 }
 
-void CPU::dec(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = ram_read_byte(&bus, addr) - 1;
-	set_zero(tmp == 0);
-	set_negative(tmp & 0x80);
-	ram_write_byte(&bus, addr, tmp);
+void dec(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t tmp = ram_read_byte(&cpu->bus, addr) - 1;
+	cpu->set_zero(tmp == 0);
+	cpu->set_negative(tmp & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp);
 }
 
-void CPU::dex() {
-	set_zero(--reg_x == 0);
-	set_negative(reg_x & 0x80);
+void dex(CPU *cpu) {
+	cpu->set_zero(--cpu->reg_x == 0);
+	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
-void CPU::dey() {
-	set_zero(--reg_y == 0);
-	set_negative(reg_y & 0x80);
+void dey(CPU *cpu) {
+	cpu->set_zero(--cpu->reg_y == 0);
+	cpu->set_negative(cpu->reg_y & 0x80);
 }
 
-void CPU::eor(AddressingMode addr_mode) {
-	accum ^= ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void eor(CPU *cpu, AddressingMode addr_mode) {
+	cpu->accum ^= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::inc(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = ram_read_byte(&bus, addr) + 1;
-	set_zero(tmp == 0);
-	set_negative(tmp & 0x80);
-	ram_write_byte(&bus, addr, tmp);
+void inc(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t tmp = ram_read_byte(&cpu->bus, addr) + 1;
+	cpu->set_zero(tmp == 0);
+	cpu->set_negative(tmp & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp);
 }
 
-void CPU::inx() {
-	set_zero(++reg_x == 0);
-	set_negative(reg_x & 0x80);
+void inx(CPU *cpu) {
+	cpu->set_zero(++cpu->reg_x == 0);
+	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
-void CPU::iny() {
-	set_zero(++reg_y == 0);
-	set_negative(reg_y & 0x80);
+void iny(CPU *cpu) {
+	cpu->set_zero(++cpu->reg_y == 0);
+	cpu->set_negative(cpu->reg_y & 0x80);
 }
 
-void CPU::jmp(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
+void jmp(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
     if (addr_mode == AddressingMode::indirect && (addr & 0xff) == 0xff) {
         /* CPU quirk in nes version of 6502
          * See https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP
          */
-        pc = (((uint16_t) ram_read_byte(&bus, addr & 0xff00)) << 8) | ram_read_byte(&bus, addr);
+        cpu->pc = (((uint16_t) ram_read_byte(&cpu->bus, addr & 0xff00)) << 8) | ram_read_byte(&cpu->bus, addr);
         return;
     }
-	pc = addr_mode == AddressingMode::indirect ? ram_read_two_bytes(&bus, addr) : addr;
+	cpu->pc = addr_mode == AddressingMode::indirect ? ram_read_two_bytes(&cpu->bus, addr) : addr;
 }
 
-void CPU::jsr() {
-	uint16_t addr = ram_read_two_bytes(&bus, pc++);
-	ram_write_byte(&bus, stack_base + sp--, pc >> 8);
-	ram_write_byte(&bus, stack_base + sp--, pc & 0xff);
-	pc = addr;
+void jsr(CPU *cpu) {
+	uint16_t addr = ram_read_two_bytes(&cpu->bus, cpu->pc++);
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc >> 8);
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
+	cpu->pc = addr;
 }
 
-void CPU::lda(AddressingMode addr_mode) {
-	accum = ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void lda(CPU *cpu, AddressingMode addr_mode) {
+	cpu->accum = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::ldx(AddressingMode addr_mode) {
-	reg_x = ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(reg_x == 0);
-	set_negative(reg_x & 0x80);
+void ldx(CPU *cpu, AddressingMode addr_mode) {
+	cpu->reg_x = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->reg_x == 0);
+	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
-void CPU::ldy(AddressingMode addr_mode) {
-	reg_y = ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(reg_y == 0);
-	set_negative(reg_y & 0x80);
+void ldy(CPU *cpu, AddressingMode addr_mode) {
+	cpu->reg_y = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->reg_y == 0);
+	cpu->set_negative(cpu->reg_y & 0x80);
 }
 
-void CPU::lsr(AddressingMode addr_mode) {
+void lsr(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == AddressingMode::accumulator) {
-		set_carry(accum & 0x1);
-		accum = accum >> 1;
-		set_zero(accum == 0);
-		set_negative(accum & 0x80);
+		cpu->set_carry(cpu->accum & 0x1);
+		cpu->accum = cpu->accum >> 1;
+		cpu->set_zero(cpu->accum == 0);
+		cpu->set_negative(cpu->accum & 0x80);
 		return;
 	}
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = ram_read_byte(&bus, addr);
-	set_carry(tmp & 0x1);
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	cpu->set_carry(tmp & 0x1);
 	tmp = tmp >> 1;
-	set_zero(tmp == 0);
-	set_negative(tmp & 0x80);
-	ram_write_byte(&bus, addr, tmp);
+	cpu->set_zero(tmp == 0);
+	cpu->set_negative(tmp & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp);
 }
 
-void CPU::ora(AddressingMode addr_mode) {
-	accum |= ram_read_byte(&bus, get_addr(addr_mode));
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void ora(CPU *cpu, AddressingMode addr_mode) {
+	cpu->accum |= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::pha() {
-	ram_write_byte(&bus, stack_base + sp--, accum);
+void pha(CPU *cpu) {
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->accum);
 }
 
-void CPU::php() {
-	ram_write_byte(&bus, stack_base + sp--, sr | 0x30);
+void php(CPU *cpu) {
+	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30);
 }
 
-void CPU::pla() {
-	accum = ram_read_byte(&bus, stack_base + ++sp);
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void pla(CPU *cpu) {
+	cpu->accum = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::plp() {
+void plp(CPU *cpu) {
 	// ignore break flag (bit 4): 0xef = 11101111 and set extra bit (bit 5): 0x20 = 00100000
-	sr = 0x20 | (ram_read_byte(&bus, stack_base + ++sp) & 0xef);
+	cpu->sr = 0x20 | (ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
 }
 
-void CPU::rol(AddressingMode addr_mode) {
+void rol(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == AddressingMode::accumulator) {
-		uint8_t tmp = (accum << 1) | get_carry();
-		set_carry(accum & 0x80);
-		accum = tmp;
-		set_zero(accum == 0);
-		set_negative(accum & 0x80);
+		uint8_t tmp = (cpu->accum << 1) | cpu->get_carry();
+		cpu->set_carry(cpu->accum & 0x80);
+		cpu->accum = tmp;
+		cpu->set_zero(cpu->accum == 0);
+		cpu->set_negative(cpu->accum & 0x80);
 		return;
 	}
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = ram_read_byte(&bus, addr);
-	uint8_t tmp_ = (tmp << 1) | get_carry();
-	set_carry(tmp & 0x80);
-	set_zero(tmp_ == 0);
-	set_negative(tmp_ & 0x80);
-	ram_write_byte(&bus, addr, tmp_);
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	uint8_t tmp_ = (tmp << 1) | cpu->get_carry();
+	cpu->set_carry(tmp & 0x80);
+	cpu->set_zero(tmp_ == 0);
+	cpu->set_negative(tmp_ & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp_);
 }
 
-void CPU::ror(AddressingMode addr_mode) {
+void ror(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == AddressingMode::accumulator) {
-		uint8_t tmp = (accum >> 1) | (((uint8_t) get_carry()) << 7);
-		set_carry(accum & 0x1);
-		accum = tmp;
-		set_zero(accum == 0);
-		set_negative(accum & 0x80);
+		uint8_t tmp = (cpu->accum >> 1) | (((uint8_t) cpu->get_carry()) << 7);
+		cpu->set_carry(cpu->accum & 0x1);
+		cpu->accum = tmp;
+		cpu->set_zero(cpu->accum == 0);
+		cpu->set_negative(cpu->accum & 0x80);
 		return;
 	}
-	uint16_t addr = get_addr(addr_mode);
-	uint8_t tmp = ram_read_byte(&bus, addr);
-	uint8_t tmp_ = (tmp >> 1) | (((uint8_t) get_carry()) << 7);
-	set_carry(tmp & 0x1);
-	set_zero(tmp_ == 0);
-	set_negative(tmp_ & 0x80);
-	ram_write_byte(&bus, addr, tmp_);
+	uint16_t addr = get_addr(cpu, addr_mode);
+	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	uint8_t tmp_ = (tmp >> 1) | (((uint8_t) cpu->get_carry()) << 7);
+	cpu->set_carry(tmp & 0x1);
+	cpu->set_zero(tmp_ == 0);
+	cpu->set_negative(tmp_ & 0x80);
+	ram_write_byte(&cpu->bus, addr, tmp_);
 }
 
-void CPU::rti() {
-	sr = 0x20 | (ram_read_byte(&bus, stack_base + ++sp) & 0xef);
-    uint8_t pcl = ram_read_byte(&bus, stack_base + ++sp);
-    uint8_t pch = ram_read_byte(&bus, stack_base + ++sp);
-	pc = (((uint16_t) pch) << 8) | pcl;
+void rti(CPU *cpu) {
+	cpu->sr = 0x20 | (ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
+    uint8_t pcl = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+    uint8_t pch = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+	cpu->pc = (((uint16_t) pch) << 8) | pcl;
 }
 
-void CPU::rts() {
-    uint8_t pcl = ram_read_byte(&bus, stack_base + ++sp);
-    uint8_t pch = ram_read_byte(&bus, stack_base + ++sp);
-    pc = ((((uint16_t) pch) << 8) | pcl) + 1;
+void rts(CPU *cpu) {
+    uint8_t pcl = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+    uint8_t pch = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+    cpu->pc = ((((uint16_t) pch) << 8) | pcl) + 1;
 }
 
-void CPU::sbc(AddressingMode addr_mode) {
-	uint8_t operand = ~ram_read_byte(&bus, get_addr(addr_mode));
-	uint16_t result = accum + operand + get_carry();
-	set_carry(result > 0xff);
+void sbc(CPU *cpu, AddressingMode addr_mode) {
+	uint8_t operand = ~ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint16_t result = cpu->accum + operand + cpu->get_carry();
+	cpu->set_carry(result > 0xff);
 	result = (uint8_t) result;
-	set_overflow((result ^ accum) & (result ^ operand) & 0x80);
-	accum = result;
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+	cpu->set_overflow((result ^ cpu->accum) & (result ^ operand) & 0x80);
+	cpu->accum = result;
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::sec() {
-	set_carry(1);
+void sec(CPU *cpu) {
+	cpu->set_carry(1);
 }
 
-void CPU::sed() {
-	set_decimal(1);
+void sed(CPU *cpu) {
+	cpu->set_decimal(1);
 }
 
-void CPU::sei() {
-	set_disable_interrupt(1);
+void sei(CPU *cpu) {
+	cpu->set_disable_interrupt(1);
 }
 
-void CPU::sta(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
-	ram_write_byte(&bus, addr, accum);
+void sta(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
+	ram_write_byte(&cpu->bus, addr, cpu->accum);
 }
 
-void CPU::stx(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
-	ram_write_byte(&bus, addr, reg_x);
+void stx(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
+	ram_write_byte(&cpu->bus, addr, cpu->reg_x);
 }
 
-void CPU::sty(AddressingMode addr_mode) {
-	uint16_t addr = get_addr(addr_mode);
-	ram_write_byte(&bus, addr, reg_y);
+void sty(CPU *cpu, AddressingMode addr_mode) {
+	uint16_t addr = get_addr(cpu, addr_mode);
+	ram_write_byte(&cpu->bus, addr, cpu->reg_y);
 }
 
-void CPU::tax() {
-	reg_x = accum;
-	set_zero(reg_x == 0);
-	set_negative(reg_x & 0x80);
+void tax(CPU *cpu) {
+	cpu->reg_x = cpu->accum;
+	cpu->set_zero(cpu->reg_x == 0);
+	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
-void CPU::tay() {
-	reg_y = accum;
-	set_zero(reg_y == 0);
-	set_negative(reg_y & 0x80);
+void tay(CPU *cpu) {
+	cpu->reg_y = cpu->accum;
+	cpu->set_zero(cpu->reg_y == 0);
+	cpu->set_negative(cpu->reg_y & 0x80);
 }
 
-void CPU::tsx() {
-	reg_x = sp;
-	set_zero(reg_x == 0);
-	set_negative(reg_x & 0x80);
+void tsx(CPU *cpu) {
+	cpu->reg_x = cpu->sp;
+	cpu->set_zero(cpu->reg_x == 0);
+	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
-void CPU::txa() {
-	accum = reg_x;
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void txa(CPU *cpu) {
+	cpu->accum = cpu->reg_x;
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
-void CPU::txs() {
-	sp = reg_x;
+void txs(CPU *cpu) {
+	cpu->sp = cpu->reg_x;
 }
 
-void CPU::tya() {
-	accum = reg_y;
-	set_zero(accum == 0);
-	set_negative(accum & 0x80);
+void tya(CPU *cpu) {
+	cpu->accum = cpu->reg_y;
+	cpu->set_zero(cpu->accum == 0);
+	cpu->set_negative(cpu->accum & 0x80);
 }
 
 size_t CPU::execute_instr() {
@@ -450,457 +450,457 @@ size_t CPU::execute_instr() {
     bool pg_cross = false, branch_taken = false, new_page = false;
     switch (uint8_t opcode = ram_read_byte(&bus, pc++); opcode) {
         case 0x69:
-            adc(AddressingMode::immediate);
+            adc(this, AddressingMode::immediate);
             return 2;
         case 0x65:
-            adc(AddressingMode::zero_page);
+            adc(this, AddressingMode::zero_page);
             return 3;
         case 0x75:
-            adc(AddressingMode::zero_page_idx_x);
+            adc(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0x6d:
-            adc(AddressingMode::absolute);
+            adc(this, AddressingMode::absolute);
             return 4;
         case 0x7d:
             // TODO: implement check for page crossing
-            pg_cross = adc(AddressingMode::absolute_idx_x);
+            pg_cross = adc(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0x79:
-            pg_cross = adc(AddressingMode::absolute_idx_y);
+            pg_cross = adc(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0x61:
-            adc(AddressingMode::indirect_idx_x);
+            adc(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0x71:
-            pg_cross = adc(AddressingMode::indirect_idx_y);
+            pg_cross = adc(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0x29:
-            and_(AddressingMode::immediate);
+            and_(this, AddressingMode::immediate);
             return 2;
         case 0x25:
-            and_(AddressingMode::zero_page);
+            and_(this, AddressingMode::zero_page);
             return 3;
         case 0x35:
-            and_(AddressingMode::zero_page_idx_x);
+            and_(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0x2d:
-            and_(AddressingMode::absolute);
+            and_(this, AddressingMode::absolute);
             return 4;
         case 0x3d:
-            pg_cross = and_(AddressingMode::absolute_idx_x);
+            pg_cross = and_(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0x39:
-            pg_cross = and_(AddressingMode::absolute_idx_y);
+            pg_cross = and_(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0x21:
-            and_(AddressingMode::indirect_idx_x);
+            and_(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0x31:
-            and_(AddressingMode::indirect_idx_y);
+            and_(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0xa:
-            asl(AddressingMode::accumulator);
+            asl(this, AddressingMode::accumulator);
             return 2;
         case 0x6:
-            asl(AddressingMode::zero_page);
+            asl(this, AddressingMode::zero_page);
             return 5;
         case 0x16:
-            asl(AddressingMode::zero_page_idx_x);
+            asl(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0xe:
-            asl(AddressingMode::absolute);
+            asl(this, AddressingMode::absolute);
             return 6;
         case 0x1e:
-            asl(AddressingMode::absolute_idx_x);
+            asl(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0x90:
-            bcc();
+            bcc(this);
             return 2 + branch_taken + new_page;
         case 0xb0:
-            bcs();
+            bcs(this);
             return 2 + branch_taken + new_page;
         case 0xf0:
-            beq();
+            beq(this);
             return 2 + branch_taken + new_page;
         case 0x24:
-            bit(AddressingMode::zero_page);
+            bit(this, AddressingMode::zero_page);
             return 3;
         case 0x2c:
-            bit(AddressingMode::absolute);
+            bit(this, AddressingMode::absolute);
             return 4;
         case 0x30:
-            bmi();
+            bmi(this);
             return 2 + branch_taken + new_page;
         case 0xd0:
-            bne();
+            bne(this);
             return 2 + branch_taken + new_page;
         case 0x10:
-            bpl();
+            bpl(this);
             return 2 + branch_taken + new_page;
         case 0x00:
-			brk();
+			brk(this);
             return 7;
         case 0x50:
-            bvc();
+            bvc(this);
             return 2 + branch_taken + new_page;
         case 0x70:
-            bvs();
+            bvs(this);
             return 2 + branch_taken + new_page;
         case 0x18:
-            clc();
+            clc(this);
             return 2;
         case 0xd8:
-            cld();
+            cld(this);
             return 2;
         case 0x58:
-            cli();
+            cli(this);
             return 2;
         case 0xb8:
-            clv();
+            clv(this);
             return 2;
         case 0xc9:
-            cmp(AddressingMode::immediate);
+            cmp(this, AddressingMode::immediate);
             return 2;
         case 0xc5:
-            cmp(AddressingMode::zero_page);
+            cmp(this, AddressingMode::zero_page);
             return 3;
         case 0xd5:
-            cmp(AddressingMode::zero_page_idx_x);
+            cmp(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0xcd:
-            cmp(AddressingMode::absolute);
+            cmp(this, AddressingMode::absolute);
             return 4;
         case 0xdd:
-            cmp(AddressingMode::absolute_idx_x);
+            cmp(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0xd9:
-            cmp(AddressingMode::absolute_idx_y);
+            cmp(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0xc1:
-            cmp(AddressingMode::indirect_idx_x);
+            cmp(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0xd1:
-            cmp(AddressingMode::indirect_idx_y);
+            cmp(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0xe0:
-            cpx(AddressingMode::immediate);
+            cpx(this, AddressingMode::immediate);
             return 2;
         case 0xe4:
-            cpx(AddressingMode::zero_page);
+            cpx(this, AddressingMode::zero_page);
             return 3;
         case 0xec:
-            cpx(AddressingMode::absolute);
+            cpx(this, AddressingMode::absolute);
             return 4;
         case 0xc0:
-            cpy(AddressingMode::immediate);
+            cpy(this, AddressingMode::immediate);
             return 2;
         case 0xc4:
-            cpy(AddressingMode::zero_page);
+            cpy(this, AddressingMode::zero_page);
             return 3;
         case 0xcc:
-            cpy(AddressingMode::absolute);
+            cpy(this, AddressingMode::absolute);
             return 4;
         case 0xc6:
-            dec(AddressingMode::zero_page);
+            dec(this, AddressingMode::zero_page);
             return 5;
         case 0xd6:
-            dec(AddressingMode::zero_page_idx_x);
+            dec(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0xce:
-            dec(AddressingMode::absolute);
+            dec(this, AddressingMode::absolute);
             return 6;
         case 0xde:
-            dec(AddressingMode::absolute_idx_x);
+            dec(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0xca:
-            dex();
+            dex(this);
             return 2;
         case 0x88:
-            dey();
+            dey(this);
             return 2;
         case 0x49:
-            eor(AddressingMode::immediate);
+            eor(this, AddressingMode::immediate);
             return 2;
         case 0x45:
-            eor(AddressingMode::zero_page);
+            eor(this, AddressingMode::zero_page);
             return 3;
         case 0x55:
-            eor(AddressingMode::zero_page_idx_x);
+            eor(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0x4d:
-            eor(AddressingMode::absolute);
+            eor(this, AddressingMode::absolute);
             return 4;
         case 0x5d:
-            eor(AddressingMode::absolute_idx_x);
+            eor(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0x59:
-            eor(AddressingMode::absolute_idx_y);
+            eor(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0x41:
-            eor(AddressingMode::indirect_idx_x);
+            eor(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0x51:
-            eor(AddressingMode::indirect_idx_y);
+            eor(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0xe6:
-            inc(AddressingMode::zero_page);
+            inc(this, AddressingMode::zero_page);
             return 5;
         case 0xf6:
-            inc(AddressingMode::zero_page_idx_x);
+            inc(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0xee:
-            inc(AddressingMode::absolute);
+            inc(this, AddressingMode::absolute);
             return 6;
         case 0xfe:
-            inc(AddressingMode::absolute_idx_x);
+            inc(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0xe8:
-            inx();
+            inx(this);
             return 2;
         case 0xc8:
-            iny();
+            iny(this);
             return 2;
         case 0x4c:
-            jmp(AddressingMode::absolute);
+            jmp(this, AddressingMode::absolute);
             return 3;
         case 0x6c:
-            jmp(AddressingMode::indirect);
+            jmp(this, AddressingMode::indirect);
             return 5;
         case 0x20:
-            jsr();
+            jsr(this);
             return 6;
         case 0xa9:
-            lda(AddressingMode::immediate);
+            lda(this, AddressingMode::immediate);
             return 2;
         case 0xa5:
-            lda(AddressingMode::zero_page);
+            lda(this, AddressingMode::zero_page);
             return 3;
         case 0xb5:
-            lda(AddressingMode::zero_page_idx_x);
+            lda(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0xad:
-            lda(AddressingMode::absolute);
+            lda(this, AddressingMode::absolute);
             return 4;
         case 0xbd:
-            lda(AddressingMode::absolute_idx_x);
+            lda(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0xb9:
-            lda(AddressingMode::absolute_idx_y);
+            lda(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0xa1:
-            lda(AddressingMode::indirect_idx_x);
+            lda(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0xb1:
-            lda(AddressingMode::indirect_idx_y);
+            lda(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0xa2:
-            ldx(AddressingMode::immediate);
+            ldx(this, AddressingMode::immediate);
             return 2;
         case 0xa6:
-            ldx(AddressingMode::zero_page);
+            ldx(this, AddressingMode::zero_page);
             return 3;
         case 0xb6:
-            ldx(AddressingMode::zero_page_idx_y);
+            ldx(this, AddressingMode::zero_page_idx_y);
             return 4;
         case 0xae:
-            ldx(AddressingMode::absolute);
+            ldx(this, AddressingMode::absolute);
             return 4;
         case 0xbe:
-            ldx(AddressingMode::absolute_idx_y);
+            ldx(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0xa0:
-            ldy(AddressingMode::immediate);
+            ldy(this, AddressingMode::immediate);
             return 2;
         case 0xa4:
-            ldy(AddressingMode::zero_page);
+            ldy(this, AddressingMode::zero_page);
             return 3;
         case 0xb4:
-            ldy(AddressingMode::zero_page_idx_x);
+            ldy(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0xac:
-            ldy(AddressingMode::absolute);
+            ldy(this, AddressingMode::absolute);
             return 4;
         case 0xbc:
-            ldy(AddressingMode::absolute_idx_x);
+            ldy(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0x4a:
-            lsr(AddressingMode::accumulator);
+            lsr(this, AddressingMode::accumulator);
             return 2;
         case 0x46:
-            lsr(AddressingMode::zero_page);
+            lsr(this, AddressingMode::zero_page);
             return 5;
         case 0x56:
-            lsr(AddressingMode::zero_page_idx_x);
+            lsr(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0x4e:
-            lsr(AddressingMode::absolute);
+            lsr(this, AddressingMode::absolute);
             return 6;
         case 0x5e:
-            lsr(AddressingMode::absolute_idx_x);
+            lsr(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0xea: // NOP
             return 2;
         case 0x9:
-            ora(AddressingMode::immediate);
+            ora(this, AddressingMode::immediate);
             return 2;
         case 0x5:
-            ora(AddressingMode::zero_page);
+            ora(this, AddressingMode::zero_page);
             return 3;
         case 0x15:
-            ora(AddressingMode::zero_page_idx_x);
+            ora(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0xd:
-            ora(AddressingMode::absolute);
+            ora(this, AddressingMode::absolute);
             return 4;
         case 0x1d:
-            ora(AddressingMode::absolute_idx_x);
+            ora(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0x19:
-            ora(AddressingMode::absolute_idx_y);
+            ora(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0x1:
-            ora(AddressingMode::indirect_idx_x);
+            ora(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0x11:
-            ora(AddressingMode::indirect_idx_y);
+            ora(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0x48:
-            pha();
+            pha(this);
             return 3;
         case 0x8:
-            php();
+            php(this);
             return 3;
         case 0x68:
-            pla();
+            pla(this);
             return 4;
         case 0x28:
-            plp();
+            plp(this);
             return 4;
         case 0x2a:
-            rol(AddressingMode::accumulator);
+            rol(this, AddressingMode::accumulator);
             return 2;
         case 0x26:
-            rol(AddressingMode::zero_page);
+            rol(this, AddressingMode::zero_page);
             return 5;
         case 0x36:
-            rol(AddressingMode::zero_page_idx_x);
+            rol(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0x2e:
-            rol(AddressingMode::absolute);
+            rol(this, AddressingMode::absolute);
             return 6;
         case 0x3e:
-            rol(AddressingMode::absolute_idx_x);
+            rol(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0x6a:
-            ror(AddressingMode::accumulator);
+            ror(this, AddressingMode::accumulator);
             return 2;
         case 0x66:
-            ror(AddressingMode::zero_page);
+            ror(this, AddressingMode::zero_page);
             return 5;
         case 0x76:
-            ror(AddressingMode::zero_page_idx_x);
+            ror(this, AddressingMode::zero_page_idx_x);
             return 6;
         case 0x6e:
-            ror(AddressingMode::absolute);
+            ror(this, AddressingMode::absolute);
             return 6;
         case 0x7e:
-            ror(AddressingMode::absolute_idx_x);
+            ror(this, AddressingMode::absolute_idx_x);
             return 7;
         case 0x40:
-            rti();
+            rti(this);
             return 6;
         case 0x60:
-            rts();
+            rts(this);
             return 6;
         case 0xe9:
-            sbc(AddressingMode::immediate);
+            sbc(this, AddressingMode::immediate);
             return 2;
         case 0xe5:
-            sbc(AddressingMode::zero_page);
+            sbc(this, AddressingMode::zero_page);
             return 3;
         case 0xf5:
-            sbc(AddressingMode::zero_page_idx_x);
+            sbc(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0xed:
-            sbc(AddressingMode::absolute);
+            sbc(this, AddressingMode::absolute);
             return 4;
         case 0xfd:
-            sbc(AddressingMode::absolute_idx_x);
+            sbc(this, AddressingMode::absolute_idx_x);
             return 4 + pg_cross;
         case 0xf9:
-            sbc(AddressingMode::absolute_idx_y);
+            sbc(this, AddressingMode::absolute_idx_y);
             return 4 + pg_cross;
         case 0xe1:
-            sbc(AddressingMode::indirect_idx_x);
+            sbc(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0xf1:
-            sbc(AddressingMode::indirect_idx_y);
+            sbc(this, AddressingMode::indirect_idx_y);
             return 5 + pg_cross;
         case 0x38:
-            sec();
+            sec(this);
             return 2;
         case 0xf8:
-            sed();
+            sed(this);
             return 2;
         case 0x78:
-            sei();
+            sei(this);
             return 2;
         case 0x85:
-            sta(AddressingMode::zero_page);
+            sta(this, AddressingMode::zero_page);
             return 3;
         case 0x95:
-            sta(AddressingMode::zero_page_idx_x);
+            sta(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0x8d:
-            sta(AddressingMode::absolute);
+            sta(this, AddressingMode::absolute);
             return 4;
         case 0x9d:
-            sta(AddressingMode::absolute_idx_x);
+            sta(this, AddressingMode::absolute_idx_x);
             return 5;
         case 0x99:
-            sta(AddressingMode::absolute_idx_y);
+            sta(this, AddressingMode::absolute_idx_y);
             return 5;
         case 0x81:
-            sta(AddressingMode::indirect_idx_x);
+            sta(this, AddressingMode::indirect_idx_x);
             return 6;
         case 0x91:
-            sta(AddressingMode::indirect_idx_y);
+            sta(this, AddressingMode::indirect_idx_y);
             return 6;
         case 0x86:
-            stx(AddressingMode::zero_page);
+            stx(this, AddressingMode::zero_page);
             return 3;
         case 0x96:
-            stx(AddressingMode::zero_page_idx_y);
+            stx(this, AddressingMode::zero_page_idx_y);
             return 4;
         case 0x8e:
-            stx(AddressingMode::absolute);
+            stx(this, AddressingMode::absolute);
             return 4;
         case 0x84:
-            sty(AddressingMode::zero_page);
+            sty(this, AddressingMode::zero_page);
             return 3;
         case 0x94:
-            sty(AddressingMode::zero_page_idx_x);
+            sty(this, AddressingMode::zero_page_idx_x);
             return 4;
         case 0x8c:
-            sty(AddressingMode::absolute);
+            sty(this, AddressingMode::absolute);
             return 4;
         case 0xaa:
-            tax();
+            tax(this);
             return 2;
         case 0xa8:
-            tay();
+            tay(this);
             return 2;
         case 0xba:
-            tsx();
+            tsx(this);
             return 2;
         case 0x8a:
-            txa();
+            txa(this);
             return 2;
         case 0x9a:
-            txs();
+            txs(this);
             return 2;
         case 0x98:
-            tya();
+            tya(this);
             return 2;
         default:
             printf("Unimplemented opcode %hhu!\n", opcode);

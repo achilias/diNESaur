@@ -15,7 +15,7 @@ add_subdirectory(vendor/SDL)
 add_library(nes_emu_core STATIC src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
-add_executable(nes_emu src/main.cpp src/display.cpp)
+add_executable(nes_emu src/main.cpp src/display.cpp src/input.cpp)
 
 
 if (APPLE)

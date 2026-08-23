@@ -2,48 +2,33 @@
 
 #include "controller.h"
 
-bool update(Controller& ctrl) {
+void poll_for_input(Controller& controller, bool* should_exit) {
     SDL_Event e;
 
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_EVENT_QUIT)
-            return false;
-
-        if (e.type == SDL_EVENT_KEY_UP && e.key.key == SDLK_ESCAPE)
-            return false;
-        if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
-            int idx;
-            switch (e.key.key) {
-            case SDLK_Z:
-                idx = static_cast<int>(Ctrl_State::SELECT);
-                break;
-            case SDLK_X:
-                idx = static_cast<int>(Ctrl_State::START);
-                break;
-            case SDLK_DOWN:
-                idx = static_cast<int>(Ctrl_State::DOWN);
-                break;
-            case SDLK_UP:
-                idx = static_cast<int>(Ctrl_State::UP);
-                break;
-            case SDLK_LEFT:
-                idx = static_cast<int>(Ctrl_State::LEFT);
-                break;
-            case SDLK_RIGHT:
-                idx = static_cast<int>(Ctrl_State::RIGHT);
-                break;
-            case SDLK_A:
-                idx = static_cast<int>(Ctrl_State::A);
-                break;
-            case SDLK_B:
-                idx = static_cast<int>(Ctrl_State::B);
-                break;
-            default:
-                idx = static_cast<int>(Ctrl_State::START);
-            }
-            ctrl.button_states[idx] = e.type == SDL_EVENT_KEY_DOWN;
+        {
+            *should_exit = true;
+            return;
         }
-    }
 
-    return true;
+        if (e.type != SDL_EVENT_KEY_DOWN && e.type != SDL_EVENT_KEY_UP)
+            continue;
+
+        Ctrl_State button;
+        switch (e.key.key) {
+            case SDLK_ESCAPE:   *should_exit = true;         return;
+            case SDLK_Z:        button = Ctrl_State::SELECT; break;
+            case SDLK_X:        button = Ctrl_State::START;  break;
+            case SDLK_DOWN:     button = Ctrl_State::DOWN;   break;
+            case SDLK_UP:       button = Ctrl_State::UP;     break;
+            case SDLK_LEFT:     button = Ctrl_State::LEFT;   break;
+            case SDLK_RIGHT:    button = Ctrl_State::RIGHT;  break;
+            case SDLK_A:        button = Ctrl_State::A;      break;
+            case SDLK_B:        button = Ctrl_State::B;      break;
+            default:            continue;
+        }
+        auto index = static_cast<int>(button);
+        controller.button_states[index] = e.type == SDL_EVENT_KEY_DOWN;
+    }
 }

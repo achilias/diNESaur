@@ -20,6 +20,7 @@ enum class AddressingMode {
 class CPU {
 public:
     explicit CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {
+        reset();
     };
     size_t execute_instr();
     void handle_nmi();

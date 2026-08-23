@@ -11,7 +11,6 @@ void CPU::handle_nmi() {
 }
 
 void CPU::reset() {
-    // pc = 0xc000;
     sp = 0xff;
     accum = 0;
     reg_x = 0;

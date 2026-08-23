@@ -28,9 +28,6 @@ int main(int argc, char *argv[]) {
     bus.rom = new ROM(file);
     CPU cpu(bus);
     PPU ppu(bus);
-    cpu.reset();
-    bus.reset();
-    ppu.reset();
 
     bool nmi = false;
     bool should_exit = false;

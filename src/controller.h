@@ -15,12 +15,6 @@ enum class Ctrl_State : int {
     STROBE
 };
 
-// Ctrl_State& operator++(Ctrl_State& st) {
-//     int next = static_cast<int>(st) + 1;
-//     Ctrl_State ret = static_cast<Ctrl_State>(next);
-//     return ret;
-// }
-
 struct Controller {
     Ctrl_State state;
     std::array<bool, 8> button_states {};

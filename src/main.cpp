@@ -7,10 +7,6 @@
 #include "controller.h"
 
 #include <SDL3/SDL.h>
-#include "imgui.h"
-#include "imgui_impl_sdl3.h"
-#include "imgui_impl_sdlrenderer3.h"
-#include "L2DFileDialog.h"
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
@@ -20,7 +16,6 @@ const int window_width = 1024;
 const int window_height = 960;
 uint32_t* framebuffer;
 SDL_Window* window;
-ImVec4 clear_colour;
 SDL_Renderer* renderer;
 SDL_Texture* texture;
 void display_init();
@@ -76,29 +71,11 @@ void draw() {
 
     for (int i = 0, sp = 0, dp = 0; i < window_height; i++, dp += window_width, sp += row_sz)
         memcpy(pixels + sp, framebuffer + dp, window_width * 4); // 4 bytes per pixel
-    
+
     SDL_UnlockTexture(texture);
-    ImGui_ImplSDLRenderer3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    SDL_RenderTexture(renderer, texture, nullptr, nullptr);
-    ImGui::NewFrame();
-
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-    ImGui::Begin("Emulator", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
-    ImGui::Image((ImTextureID)texture, ImVec2(window_width, window_height));
-    ImGui::End();
-
-    ImGui::PopStyleVar(2);
-
-    ImGui::Render();
-    SDL_SetRenderDrawColorFloat(renderer, clear_colour.x, clear_colour.y, clear_colour.z, clear_colour.w);
+    SDL_SetRenderDrawColorFloat(renderer, 0.45f, 0.55f, 0.60f, 1.00f);
     SDL_RenderClear(renderer);
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+    SDL_RenderTexture(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
 }
 
@@ -106,7 +83,6 @@ bool update(Controller& ctrl) {
     SDL_Event e;
 
     while (SDL_PollEvent(&e)) {
-        ImGui_ImplSDL3_ProcessEvent(&e);
         if (e.type == SDL_EVENT_QUIT)
             return false;
 
@@ -116,7 +92,7 @@ bool update(Controller& ctrl) {
             int idx;
             switch (e.key.key) {
                 case SDLK_F1:
-                    FileDialog::file_dialog_open = true;
+                    // TODO: ROM selection UI
                     return true;
                 // TODO: f2 for control config menu etc
                 case SDLK_Z:
@@ -155,29 +131,14 @@ bool update(Controller& ctrl) {
 
 void display_init() {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-    
-    clear_colour = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
     framebuffer = new uint32_t[window_width * window_height];
     window = SDL_CreateWindow("DiNESaur", window_width, window_height, 0);
     renderer = SDL_CreateRenderer(window, nullptr);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
-
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-
-    ImGui::StyleColorsDark();
-
-    ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
-    ImGui_ImplSDLRenderer3_Init(renderer);
 }
 
 void display_finish() {
-    ImGui_ImplSDLRenderer3_Shutdown();
-    ImGui_ImplSDL3_Shutdown();
-    ImGui::DestroyContext();
-
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

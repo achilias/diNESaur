@@ -12,21 +12,9 @@ set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/SDL)
 
-add_library(imgui STATIC
-        vendor/imgui/imgui.cpp
-        vendor/imgui/imgui_demo.cpp
-        vendor/imgui/imgui_draw.cpp
-        vendor/imgui/imgui_tables.cpp
-        vendor/imgui/imgui_widgets.cpp
-        vendor/imgui/backends/imgui_impl_sdl3.cpp
-        vendor/imgui/backends/imgui_impl_sdlrenderer3.cpp
-)
-target_include_directories(imgui PUBLIC vendor/imgui vendor/imgui/backends)
-target_link_libraries(imgui PUBLIC SDL3::SDL3-static)
-
 add_library(nes_emu_core STATIC src/cpu.cpp src/bus.cpp src/ppu.cpp src/rom.cpp)
-target_include_directories(nes_emu_core PUBLIC include vendor/L2DFileDialog/L2DFileDialog/src)
-target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static imgui)
+target_include_directories(nes_emu_core PUBLIC include)
+target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
 add_executable(nes_emu src/main.cpp)
 
@@ -44,7 +32,6 @@ endif()
 
 target_link_libraries(nes_emu PRIVATE
 nes_emu_core
-imgui
 SDL3::SDL3-static
 )
 

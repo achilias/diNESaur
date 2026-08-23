@@ -1,7 +1,10 @@
 #include "nes.h"
+#include "input.h"
 
-void nes_init(NES *nes)
+void nes_init(NES *nes, std::ifstream& file)
 {
+    nes->rom = new ROM(file);
+
     nes->bus = new Bus();
     nes->controller = new Controller();
     bus_init(nes->bus, nes->rom, nes->controller);
@@ -13,8 +16,27 @@ void nes_init(NES *nes)
     ppu_init(nes->ppu, nes->bus);
 }
 
-void nes_run(void (*drawing_callback)(uint32_t*))
+void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
 {
-    // TODO: move main loop here and take screen update function as callback
     // this is done in order to decouple the game loop and display / input code from the internal NES representation and logic
+    // TODO: better comment
+
+    bool nmi = false;
+    bool should_exit = false;
+    while (!should_exit) {
+        poll_for_input(nes->controller, &should_exit);
+
+        size_t cycles = 0;
+        if (nmi) {
+            nes->cpu->handle_nmi();
+            cycles = 2;
+        }
+        cycles += nes->cpu->execute_instr();
+        bool before = nes->bus->nmi;
+        if (nes->ppu->run(3 * cycles)) {
+            drawing_callback(nes->ppu->framebuffer.data());
+        }
+        bool after = nes->bus->nmi;
+        nmi = PPUSTATUS_VBLANK(nes->bus->ppu_status) && !before && after;
+    }
 }

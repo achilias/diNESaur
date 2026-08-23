@@ -17,4 +17,5 @@ struct NES
     Controller *controller;
 };
 
-void nes_init(NES *nes);
+void nes_init(NES *nes, std::ifstream& file);
+void nes_run(NES *nes, void (*drawing_callback)(uint32_t*));

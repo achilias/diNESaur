@@ -23,19 +23,16 @@ void cpu_reset(CPU *cpu);
 
 class CPU {
 public:
-    explicit CPU(Bus& bus) : bus(bus), sp(0xff), pc(0), accum(0), reg_x(0), reg_y(0), sr(0) {
-        cpu_reset(this);
-    };
     size_t execute_instr();
     void handle_nmi();
     Bus& bus;
     static const uint16_t stack_base = 0x100;
-    uint8_t sp;
-    uint16_t pc;
-    uint8_t accum;
-    uint8_t reg_x;
-    uint8_t reg_y;
-    uint8_t sr;
+    uint8_t sp { 0xff };
+    uint16_t pc { 0 };
+    uint8_t accum { 0 };
+    uint8_t reg_x { 0 };
+    uint8_t reg_y { 0 };
+    uint8_t sr { 0 };
 
     inline void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
     inline bool get_carry() const {return sr & 0x1;}

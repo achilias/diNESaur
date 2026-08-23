@@ -1,9 +1,9 @@
 #include "ppu.h"
 
-void PPU::reset() {
-	scanline_pixel = 0;
-	scanline_n = 0;
-	framebuffer.fill(0xff000000);
+void ppu_reset(PPU *ppu) {
+	ppu->scanline_pixel = 0;
+	ppu->scanline_n = 0;
+	ppu->framebuffer.fill(0xff000000);
 }
 
 bool PPU::run(size_t cycles) {

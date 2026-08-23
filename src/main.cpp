@@ -29,8 +29,10 @@ int main(int argc, char *argv[]) {
 
     Bus bus;
     bus_init(&bus, rom, &controller);
-    CPU cpu(bus);
-    PPU ppu(bus);
+    CPU cpu{bus};
+    cpu_reset(&cpu);
+    PPU ppu{bus};
+    ppu_reset(&ppu);
 
     display_init();
 

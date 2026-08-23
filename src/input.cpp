@@ -15,17 +15,17 @@ void poll_for_input(Controller *controller, bool* should_exit) {
         if (e.type != SDL_EVENT_KEY_DOWN && e.type != SDL_EVENT_KEY_UP)
             continue;
 
-        Ctrl_State button;
+        ControllerState button;
         switch (e.key.key) {
             case SDLK_ESCAPE:   *should_exit = true;         return;
-            case SDLK_Z:        button = Ctrl_State::SELECT; break;
-            case SDLK_X:        button = Ctrl_State::START;  break;
-            case SDLK_DOWN:     button = Ctrl_State::DOWN;   break;
-            case SDLK_UP:       button = Ctrl_State::UP;     break;
-            case SDLK_LEFT:     button = Ctrl_State::LEFT;   break;
-            case SDLK_RIGHT:    button = Ctrl_State::RIGHT;  break;
-            case SDLK_A:        button = Ctrl_State::A;      break;
-            case SDLK_B:        button = Ctrl_State::B;      break;
+            case SDLK_Z:        button = ControllerState::SELECT; break;
+            case SDLK_X:        button = ControllerState::START;  break;
+            case SDLK_DOWN:     button = ControllerState::DOWN;   break;
+            case SDLK_UP:       button = ControllerState::UP;     break;
+            case SDLK_LEFT:     button = ControllerState::LEFT;   break;
+            case SDLK_RIGHT:    button = ControllerState::RIGHT;  break;
+            case SDLK_A:        button = ControllerState::A;      break;
+            case SDLK_B:        button = ControllerState::B;      break;
             default:            continue;
         }
         auto index = static_cast<int>(button);

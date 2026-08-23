@@ -68,7 +68,7 @@ uint8_t Bus::ram_read_byte(uint16_t addr) {
             return vram_read_byte(old);
         }
         case 0x4016:
-            return controller->poll() ? 1 : 0;
+            return controller_read_serial_bit(controller) ? 1 : 0;
     }
 
     return ram[ram_mirror(addr)];
@@ -140,9 +140,9 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             }
         case 0x4016:
             if (val & 0x80)
-                controller->strobe_set();
+                controller_set_strobe(controller);
             else
-                controller->strobe_clear();
+                controller_clear_strobe(controller);
             return;
     }
     ram[ram_mirror(addr)] = val;

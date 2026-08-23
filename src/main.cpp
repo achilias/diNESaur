@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     Controller controller;
+    controller_init(&controller);
     Bus bus(nullptr, &controller);
     std::ifstream file = std::ifstream(argv[1], std::ios::binary);
     bus.rom = new ROM(file);

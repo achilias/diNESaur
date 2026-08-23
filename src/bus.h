@@ -16,7 +16,7 @@
 
 class Bus {
 public:
-    Bus(ROM const *rom, Controller& ctrl) : rom(rom), ctrl(ctrl) {};
+    Bus(ROM const *rom, Controller *controller) : rom(rom), controller(controller) {};
     uint8_t ram_read_byte(uint16_t addr);
     uint16_t ram_read_two_bytes(uint16_t addr);
     void ram_write_byte(uint16_t addr, uint8_t val);
@@ -47,7 +47,7 @@ public:
     }
 
     ROM const *rom;
-    Controller& ctrl;
+    Controller *controller;
 
     /* Map cpu memory according to NES memory map (mirroring, mapped ppu registers, etc.).
      * Disable to run regular 6502 cpu tests */

@@ -2,7 +2,7 @@
 
 #include "controller.h"
 
-void poll_for_input(Controller& controller, bool* should_exit) {
+void poll_for_input(Controller *controller, bool* should_exit) {
     SDL_Event e;
 
     while (SDL_PollEvent(&e)) {
@@ -29,6 +29,6 @@ void poll_for_input(Controller& controller, bool* should_exit) {
             default:            continue;
         }
         auto index = static_cast<int>(button);
-        controller.button_states[index] = e.type == SDL_EVENT_KEY_DOWN;
+        controller->button_states[index] = e.type == SDL_EVENT_KEY_DOWN;
     }
 }

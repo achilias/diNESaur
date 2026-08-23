@@ -17,15 +17,11 @@ enum class AddressingMode {
     indirect_idx_y,
 };
 
-class CPU;
-
-void cpu_reset(CPU *cpu);
-
 class CPU {
 public:
     size_t execute_instr();
     void handle_nmi();
-    Bus& bus;
+    Bus *bus;
     static const uint16_t stack_base = 0x100;
     uint8_t sp { 0xff };
     uint16_t pc { 0 };
@@ -49,3 +45,5 @@ public:
 };
 
 uint16_t get_addr(CPU *cpu, AddressingMode mode);
+void cpu_reset(CPU *cpu);
+void cpu_init(CPU *cpu, Bus *bus);

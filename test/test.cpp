@@ -41,14 +41,14 @@ std::vector<std::tuple<uint16_t, uint8_t>> json_as_ram(json_value_s *value) {
 
 void TestCPU::mem_locs_set(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
-        ram_write_byte(&bus, std::get<0>(*iter), std::get<1>(*iter));
+        ram_write_byte(bus, std::get<0>(*iter), std::get<1>(*iter));
     }
 }
 
 void TestCPU::mem_locs_test(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
         uint8_t expected = std::get<1>(*iter);
-        uint8_t byte = ram_read_byte(&bus, std::get<0>(*iter));
+        uint8_t byte = ram_read_byte(bus, std::get<0>(*iter));
         TEST_CHECK(byte == expected);
         TEST_MSG("addr=0x%04x expected=0x%02x actual=0x%02x", std::get<0>(*iter), (unsigned)expected, (unsigned)byte);
     }

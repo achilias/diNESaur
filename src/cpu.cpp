@@ -3,11 +3,17 @@
 // TODO: implement cycle penalties for page crosses and taken branches
 
 void CPU::handle_nmi() {
-    bus.nmi = false;
-    ram_write_byte(&bus, stack_base + sp--, sr | 0x20);
-    ram_write_two_bytes(&bus, stack_base + sp, pc);
+    bus->nmi = false;
+    ram_write_byte(bus, stack_base + sp--, sr | 0x20);
+    ram_write_two_bytes(bus, stack_base + sp, pc);
     sp -= 2; 
-    pc = ram_read_two_bytes(&bus, 0xfffa);
+    pc = ram_read_two_bytes(bus, 0xfffa);
+}
+
+void cpu_init(CPU *cpu, Bus *bus)
+{
+    cpu->bus = bus;
+    cpu_reset(cpu);
 }
 
 void cpu_reset(CPU *cpu) {
@@ -16,7 +22,7 @@ void cpu_reset(CPU *cpu) {
     cpu->reg_x = 0;
     cpu->reg_y = 0;
     cpu->sr = 0;
-    cpu->pc = ram_read_two_bytes(&cpu->bus, 0xfffc);
+    cpu->pc = ram_read_two_bytes(cpu->bus, 0xfffc);
 }
 
 uint16_t get_addr(CPU *cpu, AddressingMode mode) {
@@ -29,34 +35,34 @@ uint16_t get_addr(CPU *cpu, AddressingMode mode) {
 			return cpu->pc++;
 		case AddressingMode::indirect:
 		case AddressingMode::absolute:
-			tmp_u16 = ram_read_two_bytes(&cpu->bus, cpu->pc);
+			tmp_u16 = ram_read_two_bytes(cpu->bus, cpu->pc);
 			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_x:
-			tmp_u16 = cpu->reg_x + ram_read_two_bytes(&cpu->bus, cpu->pc);
+			tmp_u16 = cpu->reg_x + ram_read_two_bytes(cpu->bus, cpu->pc);
 			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::absolute_idx_y:
-			tmp_u16 = cpu->reg_y + ram_read_two_bytes(&cpu->bus, cpu->pc);
+			tmp_u16 = cpu->reg_y + ram_read_two_bytes(cpu->bus, cpu->pc);
 			cpu->pc += 2;
 			return tmp_u16;
 		case AddressingMode::zero_page:
-			return ram_read_byte(&cpu->bus, cpu->pc++);
+			return ram_read_byte(cpu->bus, cpu->pc++);
 		case AddressingMode::zero_page_idx_x:
-			tmp_u8 = cpu->reg_x + ram_read_byte(&cpu->bus, cpu->pc++);
+			tmp_u8 = cpu->reg_x + ram_read_byte(cpu->bus, cpu->pc++);
 			return tmp_u8;
 		case AddressingMode::zero_page_idx_y:
-			tmp_u8 = cpu->reg_y + ram_read_byte(&cpu->bus, cpu->pc++);
+			tmp_u8 = cpu->reg_y + ram_read_byte(cpu->bus, cpu->pc++);
 			return tmp_u8;
 		case AddressingMode::indirect_idx_x:
-			tmp_u8 = cpu->reg_x + ram_read_byte(&cpu->bus, cpu->pc++);
-			tmp_u16 = ram_read_byte(&cpu->bus, tmp_u8++);
-			tmp_u16 += ram_read_byte(&cpu->bus, tmp_u8) << 8;
+			tmp_u8 = cpu->reg_x + ram_read_byte(cpu->bus, cpu->pc++);
+			tmp_u16 = ram_read_byte(cpu->bus, tmp_u8++);
+			tmp_u16 += ram_read_byte(cpu->bus, tmp_u8) << 8;
 			return tmp_u16;
 		case AddressingMode::indirect_idx_y:
-			tmp_u8 = ram_read_byte(&cpu->bus, cpu->pc++);
-			tmp_u16 = ram_read_byte(&cpu->bus, tmp_u8++);
-			tmp_u16 += (ram_read_byte(&cpu->bus, tmp_u8) << 8) + cpu->reg_y;
+			tmp_u8 = ram_read_byte(cpu->bus, cpu->pc++);
+			tmp_u16 = ram_read_byte(cpu->bus, tmp_u8++);
+			tmp_u16 += (ram_read_byte(cpu->bus, tmp_u8) << 8) + cpu->reg_y;
 			return tmp_u16;
         default:
             return 0;
@@ -64,7 +70,7 @@ uint16_t get_addr(CPU *cpu, AddressingMode mode) {
 }
 
 bool adc(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	uint16_t result = cpu->accum + operand + cpu->get_carry();
 	cpu->set_carry(result > 0xff);
 	result = (uint8_t) result;
@@ -76,7 +82,7 @@ bool adc(CPU *cpu, AddressingMode addr_mode) {
 }
 
 bool and_(CPU *cpu, AddressingMode addr_mode) {
-	cpu->accum &= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->accum &= ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->accum == 0);
 	cpu->set_negative(cpu->accum & 0x80);
     return false;
@@ -91,34 +97,34 @@ void asl(CPU *cpu, AddressingMode addr_mode){
 		return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t operand = ram_read_byte(&cpu->bus, addr);
+	uint8_t operand = ram_read_byte(cpu->bus, addr);
     cpu->set_carry(operand & 0x80);
     uint8_t tmp = operand << 1;
-	ram_write_byte(&cpu->bus, addr, tmp);
+	ram_write_byte(cpu->bus, addr, tmp);
     cpu->set_zero(tmp == 0);
     cpu->set_negative(tmp & 0x80);
 }
 
 void bcc(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if (!cpu->get_carry())
 		cpu->pc += offset;
 }
 
 void bcs(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if (cpu->get_carry())
 		cpu->pc += offset;
 }
 
 void beq(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(cpu->get_zero())
 		cpu->pc += offset;
 }
 
 void bit(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	uint8_t tmp = cpu->accum & operand;
 	cpu->set_zero(tmp == 0);
 	cpu->set_overflow(operand & 0x40);
@@ -126,39 +132,39 @@ void bit(CPU *cpu, AddressingMode addr_mode) {
 }
 
 void bmi(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(cpu->get_negative())
 		cpu->pc += offset;
 }
 
 void bne(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(!cpu->get_zero())
 		cpu->pc += offset;
 }
 
 void bpl(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(!cpu->get_negative())
 		cpu->pc += offset;
 }
 
 void brk(CPU *cpu) {
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, ++cpu->pc >> 8);
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, ++cpu->pc >> 8);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
 	cpu->set_disable_interrupt(1);
-	cpu->pc = ram_read_two_bytes(&cpu->bus, 0xfffe); // address of irq interrupt handler
+	cpu->pc = ram_read_two_bytes(cpu->bus, 0xfffe); // address of irq interrupt handler
 }
 
 void bvc(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(!cpu->get_overflow())
 		cpu->pc += offset;
 }
 
 void bvs(CPU *cpu) {
-	auto offset = (int8_t) ram_read_byte(&cpu->bus, cpu->pc++);
+	auto offset = (int8_t) ram_read_byte(cpu->bus, cpu->pc++);
 	if(cpu->get_overflow())
 		cpu->pc += offset;
 }
@@ -180,7 +186,7 @@ void clv(CPU *cpu) {
 }
 
 void cmp(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_carry(cpu->accum >= operand);
 	auto result = (int8_t) (cpu->accum - operand);
 	cpu->set_zero(result == 0);
@@ -188,7 +194,7 @@ void cmp(CPU *cpu, AddressingMode addr_mode) {
 }
 
 void cpx(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_carry(cpu->reg_x >= operand);
 	auto result = (int8_t) (cpu->reg_x - operand);
 	cpu->set_zero(result == 0);
@@ -196,7 +202,7 @@ void cpx(CPU *cpu, AddressingMode addr_mode) {
 }
 
 void cpy(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_carry(cpu->reg_y >= operand);
 	auto result = (int8_t) (cpu->reg_y - operand);
 	cpu->set_zero(result == 0);
@@ -205,10 +211,10 @@ void cpy(CPU *cpu, AddressingMode addr_mode) {
 
 void dec(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t tmp = ram_read_byte(&cpu->bus, addr) - 1;
+	uint8_t tmp = ram_read_byte(cpu->bus, addr) - 1;
 	cpu->set_zero(tmp == 0);
 	cpu->set_negative(tmp & 0x80);
-	ram_write_byte(&cpu->bus, addr, tmp);
+	ram_write_byte(cpu->bus, addr, tmp);
 }
 
 void dex(CPU *cpu) {
@@ -222,17 +228,17 @@ void dey(CPU *cpu) {
 }
 
 void eor(CPU *cpu, AddressingMode addr_mode) {
-	cpu->accum ^= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->accum ^= ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->accum == 0);
 	cpu->set_negative(cpu->accum & 0x80);
 }
 
 void inc(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t tmp = ram_read_byte(&cpu->bus, addr) + 1;
+	uint8_t tmp = ram_read_byte(cpu->bus, addr) + 1;
 	cpu->set_zero(tmp == 0);
 	cpu->set_negative(tmp & 0x80);
-	ram_write_byte(&cpu->bus, addr, tmp);
+	ram_write_byte(cpu->bus, addr, tmp);
 }
 
 void inx(CPU *cpu) {
@@ -251,33 +257,33 @@ void jmp(CPU *cpu, AddressingMode addr_mode) {
         /* CPU quirk in nes version of 6502
          * See https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP
          */
-        cpu->pc = (((uint16_t) ram_read_byte(&cpu->bus, addr & 0xff00)) << 8) | ram_read_byte(&cpu->bus, addr);
+        cpu->pc = (((uint16_t) ram_read_byte(cpu->bus, addr & 0xff00)) << 8) | ram_read_byte(cpu->bus, addr);
         return;
     }
-	cpu->pc = addr_mode == AddressingMode::indirect ? ram_read_two_bytes(&cpu->bus, addr) : addr;
+	cpu->pc = addr_mode == AddressingMode::indirect ? ram_read_two_bytes(cpu->bus, addr) : addr;
 }
 
 void jsr(CPU *cpu) {
-	uint16_t addr = ram_read_two_bytes(&cpu->bus, cpu->pc++);
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc >> 8);
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
+	uint16_t addr = ram_read_two_bytes(cpu->bus, cpu->pc++);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc >> 8);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
 	cpu->pc = addr;
 }
 
 void lda(CPU *cpu, AddressingMode addr_mode) {
-	cpu->accum = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->accum = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->accum == 0);
 	cpu->set_negative(cpu->accum & 0x80);
 }
 
 void ldx(CPU *cpu, AddressingMode addr_mode) {
-	cpu->reg_x = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->reg_x = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->reg_x == 0);
 	cpu->set_negative(cpu->reg_x & 0x80);
 }
 
 void ldy(CPU *cpu, AddressingMode addr_mode) {
-	cpu->reg_y = ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->reg_y = ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->reg_y == 0);
 	cpu->set_negative(cpu->reg_y & 0x80);
 }
@@ -291,37 +297,37 @@ void lsr(CPU *cpu, AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	uint8_t tmp = ram_read_byte(cpu->bus, addr);
 	cpu->set_carry(tmp & 0x1);
 	tmp = tmp >> 1;
 	cpu->set_zero(tmp == 0);
 	cpu->set_negative(tmp & 0x80);
-	ram_write_byte(&cpu->bus, addr, tmp);
+	ram_write_byte(cpu->bus, addr, tmp);
 }
 
 void ora(CPU *cpu, AddressingMode addr_mode) {
-	cpu->accum |= ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	cpu->accum |= ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	cpu->set_zero(cpu->accum == 0);
 	cpu->set_negative(cpu->accum & 0x80);
 }
 
 void pha(CPU *cpu) {
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->accum);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->accum);
 }
 
 void php(CPU *cpu) {
-	ram_write_byte(&cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30);
+	ram_write_byte(cpu->bus, cpu->stack_base + cpu->sp--, cpu->sr | 0x30);
 }
 
 void pla(CPU *cpu) {
-	cpu->accum = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+	cpu->accum = ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp);
 	cpu->set_zero(cpu->accum == 0);
 	cpu->set_negative(cpu->accum & 0x80);
 }
 
 void plp(CPU *cpu) {
 	// ignore break flag (bit 4): 0xef = 11101111 and set extra bit (bit 5): 0x20 = 00100000
-	cpu->sr = 0x20 | (ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
+	cpu->sr = 0x20 | (ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
 }
 
 void rol(CPU *cpu, AddressingMode addr_mode) {
@@ -334,12 +340,12 @@ void rol(CPU *cpu, AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	uint8_t tmp = ram_read_byte(cpu->bus, addr);
 	uint8_t tmp_ = (tmp << 1) | cpu->get_carry();
 	cpu->set_carry(tmp & 0x80);
 	cpu->set_zero(tmp_ == 0);
 	cpu->set_negative(tmp_ & 0x80);
-	ram_write_byte(&cpu->bus, addr, tmp_);
+	ram_write_byte(cpu->bus, addr, tmp_);
 }
 
 void ror(CPU *cpu, AddressingMode addr_mode) {
@@ -352,29 +358,29 @@ void ror(CPU *cpu, AddressingMode addr_mode) {
 		return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
-	uint8_t tmp = ram_read_byte(&cpu->bus, addr);
+	uint8_t tmp = ram_read_byte(cpu->bus, addr);
 	uint8_t tmp_ = (tmp >> 1) | (((uint8_t) cpu->get_carry()) << 7);
 	cpu->set_carry(tmp & 0x1);
 	cpu->set_zero(tmp_ == 0);
 	cpu->set_negative(tmp_ & 0x80);
-	ram_write_byte(&cpu->bus, addr, tmp_);
+	ram_write_byte(cpu->bus, addr, tmp_);
 }
 
 void rti(CPU *cpu) {
-	cpu->sr = 0x20 | (ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
-    uint8_t pcl = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
-    uint8_t pch = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+	cpu->sr = 0x20 | (ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp) & 0xef);
+    uint8_t pcl = ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp);
+    uint8_t pch = ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp);
 	cpu->pc = (((uint16_t) pch) << 8) | pcl;
 }
 
 void rts(CPU *cpu) {
-    uint8_t pcl = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
-    uint8_t pch = ram_read_byte(&cpu->bus, cpu->stack_base + ++cpu->sp);
+    uint8_t pcl = ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp);
+    uint8_t pch = ram_read_byte(cpu->bus, cpu->stack_base + ++cpu->sp);
     cpu->pc = ((((uint16_t) pch) << 8) | pcl) + 1;
 }
 
 void sbc(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ~ram_read_byte(&cpu->bus, get_addr(cpu, addr_mode));
+	uint8_t operand = ~ram_read_byte(cpu->bus, get_addr(cpu, addr_mode));
 	uint16_t result = cpu->accum + operand + cpu->get_carry();
 	cpu->set_carry(result > 0xff);
 	result = (uint8_t) result;
@@ -398,17 +404,17 @@ void sei(CPU *cpu) {
 
 void sta(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
-	ram_write_byte(&cpu->bus, addr, cpu->accum);
+	ram_write_byte(cpu->bus, addr, cpu->accum);
 }
 
 void stx(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
-	ram_write_byte(&cpu->bus, addr, cpu->reg_x);
+	ram_write_byte(cpu->bus, addr, cpu->reg_x);
 }
 
 void sty(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
-	ram_write_byte(&cpu->bus, addr, cpu->reg_y);
+	ram_write_byte(cpu->bus, addr, cpu->reg_y);
 }
 
 void tax(CPU *cpu) {
@@ -448,7 +454,7 @@ void tya(CPU *cpu) {
 size_t CPU::execute_instr() {
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;
-    switch (uint8_t opcode = ram_read_byte(&bus, pc++); opcode) {
+    switch (uint8_t opcode = ram_read_byte(bus, pc++); opcode) {
         case 0x69:
             adc(this, AddressingMode::immediate);
             return 2;

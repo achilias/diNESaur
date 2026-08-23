@@ -54,3 +54,9 @@ void draw() {
     SDL_RenderTexture(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
 }
+
+void render_and_draw(uint32_t *buffer)
+{
+    render(SDL_GetTicks(), buffer);
+    draw();
+}

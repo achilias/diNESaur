@@ -60,7 +60,6 @@ uint16_t CPU::get_addr(AddressingMode mode) {
 			tmp_u16 += (bus.ram_read_byte(tmp_u8) << 8) + reg_y;
 			return tmp_u16;
         default:
-            // TODO: error
             return 0;
 	}
 }
@@ -448,7 +447,6 @@ void CPU::tya() {
 }
 
 size_t CPU::execute_instr() {
-    // printf("%4X\n", bus.ram_read_byte(pc));
     // TODO: Implement checks to set these flags and return correct number of cpu cycles
     bool pg_cross = false, branch_taken = false, new_page = false;
     switch (uint8_t opcode = bus.ram_read_byte(pc++); opcode) {
@@ -906,7 +904,6 @@ size_t CPU::execute_instr() {
             tya();
             return 2;
         default:
-            // TODO: exception
             printf("Unimplemented opcode %hhu!\n", opcode);
             exit(0);
             return 0;

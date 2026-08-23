@@ -144,8 +144,6 @@ void Bus::ram_write_byte(uint16_t addr, uint8_t val) {
             else
                 ctrl.strobe_clear();
             return;
-
-            // TODO: second controller
     }
     ram[ram_mirror(addr)] = val;
 };

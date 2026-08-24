@@ -8,7 +8,6 @@
 #include "controller.h"
 
 #define RAM_SIZE 65536
-#define OAM_SIZE 256
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
@@ -27,16 +26,7 @@ public:
 
     size_t catchup_cycles{ 0 };
 
-    uint8_t ppu_ctrl{ 0 };
-    uint8_t ppu_mask{ 0 };
-    uint8_t ppu_status{ 0 };
-    uint8_t oam_addr{ 0 };
-    uint16_t ppu_addr{ 0 };
-    bool ppu_w_reg{ false };
-    bool ignore_ctrl_writes{ true };
-
     std::array<uint8_t, RAM_SIZE> ram {};
-    std::array<uint8_t, OAM_SIZE> oam {};
 };
 
 uint8_t ram_read_byte(Bus *bus, uint16_t addr);

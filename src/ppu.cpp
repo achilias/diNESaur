@@ -57,6 +57,74 @@ void ppu_write_vram_byte(PPU *ppu, uint16_t addr, uint8_t val) {
 
 void ppu_write_vram_two_bytes(PPU *ppu, uint16_t addr, uint16_t val) { ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom), (uint8_t) (val & 0xFF)); ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom) + 1, (uint8_t) (val >> 8)); };
 
+uint8_t ppu_read_register(PPU *ppu, uint16_t addr) {
+    switch (addr) {
+        case 0x2002: {
+            uint8_t tmp = ppu->ppu_status;
+            PPUSTATUS_SET_VBLANK(ppu->ppu_status, false);
+            ppu->ppu_w_reg = false;
+            return tmp;
+        }
+        case 0x2004:
+            /* TODO: reads to OAMDATA should have different behavior during rendering
+             * (i.e. not during vblanks), few games use this, but should be handled for accuracy. */
+            return ppu->oam[ppu->oam_addr];
+        case 0x2007: {
+            uint16_t old = ppu->ppu_addr;
+            ppu->ppu_addr += PPUCTRL_INCR(ppu->ppu_ctrl) ? 32 : 1;
+            return ppu_read_vram_byte(ppu, old);
+        }
+    }
+    return 0;
+}
+
+void ppu_write_register(PPU *ppu, uint16_t addr, uint8_t val) {
+    switch (addr) {
+        case 0x2000: // PPUCTRL
+            if (ppu->ignore_ctrl_writes)
+                return;
+
+            {
+            bool before = PPUCTRL_VBLANK_ENABLE(ppu->ppu_ctrl);
+            ppu->ppu_ctrl = val;
+            bool after = PPUCTRL_VBLANK_ENABLE(ppu->ppu_ctrl);
+            if (!before && after && PPUSTATUS_VBLANK(ppu->ppu_status))
+                ppu->nes->nmi = true && printf("nmi triggered on flag change!\n");;
+            }
+
+            return;
+        case 0x2001:
+            ppu->ppu_mask = val;
+            return;
+        case 0x2003:
+            ppu->oam_addr = val;
+            return;
+        case 0x2004:
+            /* TODO: writes to OAMDATA should have different behavior during rendering
+            * (i.e. not during vblanks), probably completely ignored. */
+            ppu->oam[ppu->oam_addr++] = val;
+            return;
+        case 0x2005:
+            /* TODO: implement scrolling */
+            return;
+        case 0x2006:
+            if (!ppu->ppu_w_reg)
+                ppu->ppu_addr = ((uint16_t) val) << 8;
+            else
+                ppu->ppu_addr |= val;
+
+            ppu->ppu_w_reg = !ppu->ppu_w_reg;
+            return;
+        case 0x2007:
+            {
+                uint16_t old = ppu->ppu_addr;
+                ppu->ppu_addr += PPUCTRL_INCR(ppu->ppu_ctrl) ? 32 : 1;
+                ppu_write_vram_byte(ppu, old, val);
+                return;
+            }
+    }
+}
+
 void ppu_reset(PPU *ppu) {
 	ppu->scanline_pixel = 0;
 	ppu->scanline_n = 0;
@@ -80,16 +148,16 @@ bool PPU::run(size_t cycles) {
 	scanline_n++;
 
 	if (scanline_n >= 261) {
-		bus->ignore_ctrl_writes = false;
+		ignore_ctrl_writes = false;
 		scanline_n = 0;
-		PPUSTATUS_SET_VBLANK(bus->ppu_status, false);
+		PPUSTATUS_SET_VBLANK(ppu_status, false);
 	}
 	
 
 	if (scanline_n == 241) {
 		scanline_n++;
-		PPUSTATUS_SET_VBLANK(bus->ppu_status, true);
-		if (PPUCTRL_VBLANK_ENABLE(bus->ppu_ctrl)) {
+		PPUSTATUS_SET_VBLANK(ppu_status, true);
+		if (PPUCTRL_VBLANK_ENABLE(ppu_ctrl)) {
 			nes->nmi = true;
 		}
 
@@ -144,7 +212,7 @@ uint16_t pt_base[]	= {0x0, 0x1000};
 #define ATTR_TB_BYTE_BOTTOM_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0b11000000) >> 6)
 
 uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
-	uint16_t at_start = at_base[PPUCTRL_NT(bus->ppu_ctrl)];
+	uint16_t at_start = at_base[PPUCTRL_NT(ppu_ctrl)];
 	uint16_t nt_y = tile_n / 32;
 	uint16_t nt_x = tile_n % 32;
 	uint16_t at_idx = (nt_y / 4 )* 8 + nt_x / 4;
@@ -169,9 +237,9 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 
 void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
-	uint16_t pt_tile_offset = ppu_read_vram_byte(this, nt_base[PPUCTRL_NT(bus->ppu_ctrl)] + tile_n) * 16;
+	uint16_t pt_tile_offset = ppu_read_vram_byte(this, nt_base[PPUCTRL_NT(ppu_ctrl)] + tile_n) * 16;
 
-	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(bus->ppu_ctrl)];
+	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(ppu_ctrl)];
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
@@ -192,14 +260,14 @@ void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 }
 
 void PPU::draw_sprite(uint8_t sprite_n) {
-	uint8_t base_y = bus->oam[sprite_n * 4];
-	uint16_t tile_idx = bus->oam[sprite_n * 4 + 1];
-	if (PPUCTRL_SPRITE_SZ(bus->ppu_ctrl))
+	uint8_t base_y = oam[sprite_n * 4];
+	uint16_t tile_idx = oam[sprite_n * 4 + 1];
+	if (PPUCTRL_SPRITE_SZ(ppu_ctrl))
 		printf("Attempted to draw 8x16 sprite. This is unimplemented!\n");
-	uint16_t attr = bus->oam[sprite_n * 4 + 2];
-	uint8_t base_x = bus->oam[sprite_n * 4 + 3];
+	uint16_t attr = oam[sprite_n * 4 + 2];
+	uint8_t base_x = oam[sprite_n * 4 + 3];
 
-	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(bus->ppu_ctrl)];
+	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(ppu_ctrl)];
 	bool flip_hrz = (attr & 0b01000000) != 0;
 	bool flip_vrt = (attr & 0b10000000) != 0;
 

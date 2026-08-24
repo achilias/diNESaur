@@ -38,6 +38,6 @@ void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
             drawing_callback(nes->ppu->framebuffer.data());
         }
         bool after = nes->nmi;
-        nmi = PPUSTATUS_VBLANK(nes->bus->ppu_status) && !before && after;
+        nmi = PPUSTATUS_VBLANK(nes->ppu->ppu_status) && !before && after;
     }
 }

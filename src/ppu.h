@@ -1,14 +1,21 @@
 #pragma once
 
-#include "bus.h"
+#include <cstdint>
+#include <array>
+
+#include "flags.h"
 
 #define VRAM_SIZE 16384
 #define OAM_SIZE 256
 
+#define SCREEN_WIDTH 256
+#define SCREEN_HEIGHT 240
+
+struct NES;
 class PPU;
 
 void ppu_reset(PPU *ppu);
-void ppu_init(PPU *ppu, Bus *bus, NES *nes);
+void ppu_init(PPU *ppu, NES *nes);
 uint8_t ppu_read_vram_byte(PPU *ppu, uint16_t addr);
 uint16_t ppu_read_vram_two_bytes(PPU *ppu, uint16_t addr);
 void ppu_write_vram_byte(PPU *ppu, uint16_t addr, uint8_t val);
@@ -21,7 +28,6 @@ public:
     bool run(size_t cycles);
     void draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y);
     void draw_sprite(uint8_t sprite_n);
-    Bus *bus;
     NES *nes;
     std::array<uint32_t, SCREEN_WIDTH * SCREEN_HEIGHT> framebuffer {};
     std::array<uint8_t, VRAM_SIZE> vram {};

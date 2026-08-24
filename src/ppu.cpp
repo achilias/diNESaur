@@ -131,9 +131,8 @@ void ppu_reset(PPU *ppu) {
 	ppu->framebuffer.fill(0xff000000);
 }
 
-void ppu_init(PPU *ppu, Bus *bus, NES *nes)
+void ppu_init(PPU *ppu, NES *nes)
 {
-	ppu->bus = bus;
 	ppu->nes = nes;
 	ppu_reset(ppu);
 }

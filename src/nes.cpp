@@ -8,12 +8,13 @@ void nes_init(NES *nes, std::ifstream& file)
     nes->bus = new Bus();
     nes->controller = new Controller();
     bus_init(nes->bus, nes->rom, nes->controller);
+    nes->bus->nes = nes;
 
     nes->cpu = new CPU();
-    cpu_init(nes->cpu, nes->bus);
+    cpu_init(nes->cpu, nes->bus, nes);
 
     nes->ppu = new PPU();
-    ppu_init(nes->ppu, nes->bus);
+    ppu_init(nes->ppu, nes->bus, nes);
 }
 
 void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
@@ -32,11 +33,11 @@ void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
             cycles = 2;
         }
         cycles += nes->cpu->execute_instr();
-        bool before = nes->bus->nmi;
+        bool before = nes->nmi;
         if (nes->ppu->run(3 * cycles)) {
             drawing_callback(nes->ppu->framebuffer.data());
         }
-        bool after = nes->bus->nmi;
+        bool after = nes->nmi;
         nmi = PPUSTATUS_VBLANK(nes->bus->ppu_status) && !before && after;
     }
 }

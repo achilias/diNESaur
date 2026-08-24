@@ -1,18 +1,20 @@
 #include "cpu.h"
+#include "nes.h"
 
 // TODO: implement cycle penalties for page crosses and taken branches
 
 void CPU::handle_nmi() {
-    bus->nmi = false;
+    nes->nmi = false;
     ram_write_byte(bus, stack_base + sp--, sr | 0x20);
     ram_write_two_bytes(bus, stack_base + sp, pc);
     sp -= 2; 
     pc = ram_read_two_bytes(bus, 0xfffa);
 }
 
-void cpu_init(CPU *cpu, Bus *bus)
+void cpu_init(CPU *cpu, Bus *bus, NES *nes)
 {
     cpu->bus = bus;
+    cpu->nes = nes;
     cpu_reset(cpu);
 }
 

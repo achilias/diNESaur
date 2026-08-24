@@ -15,6 +15,7 @@ struct NES
     ROM *rom;
     Bus *bus;
     Controller *controller;
+    bool nmi { false };
 };
 
 void nes_init(NES *nes, std::ifstream& file);

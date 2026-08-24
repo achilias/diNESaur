@@ -14,16 +14,18 @@
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
 
+struct NES;
+
 class Bus {
 public:
     ROM const *rom;
     Controller *controller;
+    NES *nes;
 
     /* Map cpu memory according to NES memory map (mirroring, mapped ppu registers, etc.).
      * Disable to run regular 6502 cpu tests */
     bool map_memory_nes { true };
 
-    bool nmi { false };
     size_t catchup_cycles{ 0 };
 
     uint8_t ppu_ctrl{ 0 };

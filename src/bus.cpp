@@ -1,4 +1,5 @@
 #include "bus.h"
+#include "nes.h"
 
 #include <cassert>
 
@@ -11,7 +12,6 @@ void bus_init(Bus *bus, ROM const *rom, Controller *controller)
     std::fill(bus->ram.begin(), bus->ram.end(), 0);
     std::fill(bus->vram.begin(), bus->vram.end(), 0);
     std::fill(bus->oam.begin(), bus->oam.end(), 0);
-    bus->nmi = false;
     bus->catchup_cycles = 0;
     bus->ppu_ctrl = 0;
     bus->ppu_mask = 0;
@@ -124,7 +124,7 @@ void ram_write_byte(Bus *bus, uint16_t addr, uint8_t val) {
             bus->ppu_ctrl = val;
             bool after = PPUCTRL_VBLANK_ENABLE(bus->ppu_ctrl);
             if (!before && after && PPUSTATUS_VBLANK(bus->ppu_status))
-                bus->nmi = true && printf("nmi triggered on flag change!\n");;
+                bus->nes->nmi = true && printf("nmi triggered on flag change!\n");;
             }
 
             return;

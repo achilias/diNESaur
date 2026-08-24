@@ -1,4 +1,5 @@
 #include "ppu.h"
+#include "nes.h"
 
 void ppu_reset(PPU *ppu) {
 	ppu->scanline_pixel = 0;
@@ -6,9 +7,10 @@ void ppu_reset(PPU *ppu) {
 	ppu->framebuffer.fill(0xff000000);
 }
 
-void ppu_init(PPU *ppu, Bus *bus)
+void ppu_init(PPU *ppu, Bus *bus, NES *nes)
 {
 	ppu->bus = bus;
+	ppu->nes = nes;
 	ppu_reset(ppu);
 }
 
@@ -32,7 +34,7 @@ bool PPU::run(size_t cycles) {
 		scanline_n++;
 		PPUSTATUS_SET_VBLANK(bus->ppu_status, true);
 		if (PPUCTRL_VBLANK_ENABLE(bus->ppu_ctrl)) {
-			bus->nmi = true;
+			nes->nmi = true;
 		}
 
 		for (int i = 0; i < 30; i++) {

@@ -8,7 +8,6 @@
 #include "controller.h"
 
 #define RAM_SIZE 65536
-#define VRAM_SIZE 16384
 #define OAM_SIZE 256
 
 #define SCREEN_WIDTH 256
@@ -37,7 +36,6 @@ public:
     bool ignore_ctrl_writes{ true };
 
     std::array<uint8_t, RAM_SIZE> ram {};
-    std::array<uint8_t, VRAM_SIZE> vram {};
     std::array<uint8_t, OAM_SIZE> oam {};
 };
 
@@ -45,8 +43,4 @@ uint8_t ram_read_byte(Bus *bus, uint16_t addr);
 uint16_t ram_read_two_bytes(Bus *bus, uint16_t addr);
 void ram_write_byte(Bus *bus, uint16_t addr, uint8_t val);
 void ram_write_two_bytes(Bus *bus, uint16_t addr, uint16_t val);
-void vram_write_byte(Bus *bus, uint16_t addr, uint8_t val);
-void vram_write_two_bytes(Bus *bus, uint16_t addr, uint16_t val);
-uint8_t vram_read_byte(Bus *bus, uint16_t addr);
-uint16_t vram_read_two_bytes(Bus *bus, uint16_t addr);
 void bus_init(Bus *bus, ROM const *rom, Controller *controller);

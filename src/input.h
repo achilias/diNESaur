@@ -1,4 +1,4 @@
-#include "controller.h"
+#include "core/controller.h"
 
 /* Processes pending SDL events and updates the NES controller state until the
  * no pending events remain or an exit is requested (escape pressed or window closed).

@@ -1,5 +1,5 @@
 #include "nes.h"
-#include "input.h"
+#include "../input.h"
 
 void nes_init(NES *nes, std::ifstream& file)
 {

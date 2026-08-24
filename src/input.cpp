@@ -1,6 +1,6 @@
 #include <SDL3/SDL.h>
 
-#include "controller.h"
+#include "core/controller.h"
 
 void poll_for_input(Controller *controller, bool* should_exit) {
     SDL_Event e;

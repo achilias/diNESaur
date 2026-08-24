@@ -12,7 +12,7 @@ set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/SDL)
 
-add_library(nes_emu_core STATIC src/cpu.cpp src/ppu.cpp src/rom.cpp src/controller.cpp src/nes.cpp)
+add_library(nes_emu_core STATIC src/core/cpu.cpp src/core/ppu.cpp src/core/rom.cpp src/core/controller.cpp src/core/nes.cpp)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
 add_executable(nes_emu src/main.cpp src/display.cpp src/input.cpp)

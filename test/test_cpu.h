@@ -1,7 +1,7 @@
 #ifndef TEST_CPU_H
 #define TEST_CPU_H
 
-#include "../src/cpu.h"
+#include "../src/core/cpu.h"
 #include <vector>
 
 class TestCPU : public CPU {

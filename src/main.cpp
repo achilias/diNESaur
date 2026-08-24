@@ -1,7 +1,7 @@
 #include <fstream>
 #include <ios>
 
-#include "nes.h"
+#include "core/nes.h"
 
 void display_init();
 void display_finish( );

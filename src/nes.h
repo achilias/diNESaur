@@ -13,7 +13,6 @@ struct NES
     CPU *cpu;
     PPU *ppu;
     ROM *rom;
-    Bus *bus;
     Controller *controller;
     bool nmi { false };
 };

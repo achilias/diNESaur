@@ -6,7 +6,8 @@
 
 class TestCPU : public CPU {
 public:
-    TestCPU() : CPU{make_test_bus()} { cpu_reset(this); };
+    // standalone=true so memory access never touches nes (left null - unused).
+    TestCPU() : CPU{nullptr, true} { cpu_reset(this); };
     void test_opcode(std::string opcode);
     void set_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t sr);
     void test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t sr);

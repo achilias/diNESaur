@@ -4,17 +4,13 @@
 void nes_init(NES *nes, std::ifstream& file)
 {
     nes->rom = new ROM(file);
-
-    nes->bus = new Bus();
     nes->controller = new Controller();
-    bus_init(nes->bus, nes->rom, nes->controller);
-    nes->bus->nes = nes;
 
     nes->cpu = new CPU();
-    cpu_init(nes->cpu, nes->bus, nes);
+    cpu_init(nes->cpu, nes);
 
     nes->ppu = new PPU();
-    ppu_init(nes->ppu, nes->bus, nes);
+    ppu_init(nes->ppu, nes);
 }
 
 void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))

@@ -3,6 +3,7 @@
 
 #include "core/nes.h"
 #include "display.h"
+#include "input.h"
 
 int main(int argc, char *argv[]) {
 
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
     NES nes;
     nes_init(&nes, file);
 
-    nes_run(&nes, &render_and_draw);
+    nes_run(&nes, &render_and_draw, &poll_for_input);
 
     display_finish();
 

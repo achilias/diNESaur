@@ -13,7 +13,7 @@ void nes_init(NES *nes, std::ifstream& file)
     ppu_init(nes->ppu, nes);
 }
 
-void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
+void nes_run(NES *nes, DrawingCallback draw, InputPollingCallback poll_for_input)
 {
     // this is done in order to decouple the game loop and display / input code from the internal NES representation and logic
     // TODO: better comment
@@ -31,7 +31,7 @@ void nes_run(NES *nes, void (*drawing_callback)(uint32_t*))
         cycles += nes->cpu->execute_instr();
         bool before = nes->nmi;
         if (nes->ppu->run(3 * cycles)) {
-            drawing_callback(nes->ppu->framebuffer.data());
+            draw(nes->ppu->framebuffer.data());
         }
         bool after = nes->nmi;
         nmi = PPUSTATUS_VBLANK(nes->ppu->ppu_status) && !before && after;

@@ -17,5 +17,8 @@ struct NES
     bool nmi { false };
 };
 
+typedef void (*DrawingCallback)(uint32_t*);
+typedef void (*InputPollingCallback)(Controller*, bool*);
+
 void nes_init(NES *nes, std::ifstream& file);
-void nes_run(NES *nes, void (*drawing_callback)(uint32_t*));
+void nes_run(NES *nes, DrawingCallback draw, InputPollingCallback poll_for_input);

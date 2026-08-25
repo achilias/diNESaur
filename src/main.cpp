@@ -2,10 +2,7 @@
 #include <ios>
 
 #include "core/nes.h"
-
-void display_init();
-void display_finish( );
-void render_and_draw(uint32_t *buffer);
+#include "display.h"
 
 int main(int argc, char *argv[]) {
 

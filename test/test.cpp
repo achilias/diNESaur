@@ -99,7 +99,7 @@ void test_opcode(CPU *cpu, std::string opcode) {
 
         mem_locs_set(cpu, json_as_ram(json_get(init, "ram")));
 
-        cpu->execute_instr();
+        cpu_execute_instruction(cpu);
 
         json_value_s *final = json_get(test_case, "final");
 

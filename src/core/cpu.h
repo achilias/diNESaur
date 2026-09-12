@@ -1,17 +1,19 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <array>
-
-#define RAM_SIZE 65536
 
 struct NES;
 
+#define RAM_SIZE 65536
 
 struct CPU {
-    size_t execute_instr();
-    void handle_nmi();
+    /*
+     * Back pointer to the parent NES instance. Used as a bus in order to access other components.
+     * CPU operations can:
+     * - Read from ROM
+     * - Read and modify PPU registers and memory
+     * - Read and modify controller states
+     */
     NES *nes;
     /* When true, memory access never touches nes at all (used to run pure
      * 6502 opcode tests against a flat, unmapped ram array).
@@ -24,7 +26,7 @@ struct CPU {
     uint8_t reg_x { 0 };
     uint8_t reg_y { 0 };
     uint8_t flags { 0 };
-    std::array<uint8_t, RAM_SIZE> ram {};
+    uint8_t ram[RAM_SIZE];
 
     void set_carry(bool cond) {flags = cond ? flags | 0x1 : flags & ~0x1;}
     bool get_carry() const {return flags & 0x1;}
@@ -42,3 +44,5 @@ struct CPU {
 
 void cpu_reset(CPU *cpu);
 void cpu_init(CPU *cpu, NES *nes);
+size_t cpu_execute_instruction(CPU *cpu);
+void cpu_handle_nmi(CPU *cpu);

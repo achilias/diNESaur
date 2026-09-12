@@ -25,10 +25,10 @@ void nes_run(NES *nes, DrawingCallback draw, InputPollingCallback poll_for_input
 
         size_t cycles = 0;
         if (nmi) {
-            nes->cpu->handle_nmi();
+            cpu_handle_nmi(nes->cpu);
             cycles = 2;
         }
-        cycles += nes->cpu->execute_instr();
+        cycles += cpu_execute_instruction(nes->cpu);
         bool before = nes->nmi;
         if (nes->ppu->run(3 * cycles)) {
             draw(nes->ppu->framebuffer.data());

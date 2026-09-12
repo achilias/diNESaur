@@ -5,7 +5,6 @@
 #include "controller.h"
 #include "cpu.h"
 
-#include <cstdint>
 #include <array>
 
 struct NES

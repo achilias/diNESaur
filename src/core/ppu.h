@@ -31,10 +31,6 @@ struct PPU {
     size_t scanline_n;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 PPU *ppu_create(struct NES *nes);
 bool ppu_run(PPU *ppu, size_t cycles);
 void ppu_draw_tile(PPU *ppu, uint32_t tile_n, uint32_t base_x, uint32_t base_y);
@@ -46,6 +42,3 @@ void ppu_write_vram_two_bytes(PPU *ppu, uint16_t addr, uint16_t val);
 uint8_t ppu_read_register(PPU *ppu, uint16_t addr);
 void ppu_write_register(PPU *ppu, uint16_t addr, uint8_t val);
 
-#ifdef __cplusplus
-}
-#endif

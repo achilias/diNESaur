@@ -1,4 +1,7 @@
+#include "display.h"
 #include <SDL3/SDL.h>
+#include <stdlib.h>
+#include <string.h>
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -10,16 +13,16 @@ const int window_height = 960;
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
 
-void display_init() {
+void display_init(void) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
 
-    framebuffer = new uint32_t[window_width * window_height];
+    framebuffer = malloc(sizeof(uint32_t) * window_width * window_height);
     window = SDL_CreateWindow("DiNESaur", window_width, window_height, 0);
-    renderer = SDL_CreateRenderer(window, nullptr);
+    renderer = SDL_CreateRenderer(window, NULL);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, window_width, window_height);
 }
 
-void display_finish() {
+void display_finish(void) {
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -40,10 +43,10 @@ void render(uint64_t ticks, uint32_t *buffer) {
             draw_rect(i * rect_width, j * rect_height, rect_width, rect_height, buffer[j * SCREEN_WIDTH + i], framebuffer);
 }
 
-void draw() {
+void draw(void) {
     char *pixels;
     int row_sz;
-    SDL_LockTexture(texture, nullptr, (void**) &pixels, &row_sz);
+    SDL_LockTexture(texture, NULL, (void**) &pixels, &row_sz);
 
     for (int i = 0, sp = 0, dp = 0; i < window_height; i++, dp += window_width, sp += row_sz)
         memcpy(pixels + sp, framebuffer + dp, window_width * 4); // 4 bytes per pixel
@@ -51,7 +54,7 @@ void draw() {
     SDL_UnlockTexture(texture);
     SDL_SetRenderDrawColorFloat(renderer, 0.45f, 0.55f, 0.60f, 1.00f);
     SDL_RenderClear(renderer);
-    SDL_RenderTexture(renderer, texture, nullptr, nullptr);
+    SDL_RenderTexture(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 }
 

@@ -1,22 +1,19 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_ARCHITECTURES arm64)
 
-project(nes-emu LANGUAGES C CXX)
+project(nes-emu LANGUAGES C)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-Wall")
 
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/SDL)
 
-add_library(nes_emu_core STATIC src/core/cpu.c src/core/ppu.c src/core/rom.c src/core/controller.c src/core/nes.cpp)
+add_library(nes_emu_core STATIC src/core/cpu.c src/core/ppu.c src/core/rom.c src/core/controller.c src/core/nes.c)
 set_target_properties(nes_emu_core PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
-add_executable(nes_emu src/main.cpp src/display.cpp src/input.c)
+add_executable(nes_emu src/main.c src/display.c src/input.c)
 set_target_properties(nes_emu PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 
 
@@ -38,7 +35,8 @@ SDL3::SDL3-static
 
 enable_testing()
 
-add_executable(nes_emu_test test/test.cpp src/core/cpu.c)
+add_executable(nes_emu_test test/test.c src/core/cpu.c)
 set_target_properties(nes_emu_test PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
+target_compile_options(nes_emu_test PRIVATE -Wall)
 target_compile_definitions(nes_emu_test PRIVATE TEST_BUILD)
 add_test(NAME nes_emu_test COMMAND nes_emu_test)

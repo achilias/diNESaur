@@ -19,15 +19,8 @@ typedef struct ROM {
     uint8_t *chr_data;
 } ROM;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ROM *rom_create(FILE *stream);
 void rom_destroy(ROM *rom);
 uint8_t rom_read_byte_prg(const ROM *rom, uint16_t addr);
 uint8_t rom_read_byte_chr(const ROM *rom, uint16_t addr);
 
-#ifdef __cplusplus
-}
-#endif

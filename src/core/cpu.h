@@ -27,14 +27,7 @@ typedef struct CPU {
 
 } CPU;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 CPU *cpu_create(struct NES *nes);
 size_t cpu_execute_instruction(CPU *cpu);
 void cpu_handle_nmi(CPU *cpu);
 
-#ifdef __cplusplus
-}
-#endif

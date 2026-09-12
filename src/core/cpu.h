@@ -38,24 +38,23 @@ public:
     uint8_t accum { 0 };
     uint8_t reg_x { 0 };
     uint8_t reg_y { 0 };
-    uint8_t sr { 0 };
+    uint8_t flags { 0 };
     std::array<uint8_t, RAM_SIZE> ram {};
 
-    inline void set_carry(bool cond) {sr = cond ? sr | 0x1 : sr & ~0x1;}
-    inline bool get_carry() const {return sr & 0x1;}
-    inline void set_zero(bool cond) {sr = cond ? sr | 0x2 : sr & ~0x2;}
-    inline bool get_zero() const {return sr & 0x2;}
-    inline void set_disable_interrupt(bool cond) {sr = cond ? sr | 0x4 : sr & ~0x4;}
-    inline bool get_disable_interrupt() const {return sr & 0x4;}
-    inline void set_overflow(bool cond) {sr = cond ? sr | 0x40 : sr & ~0x40;};
-    inline void set_decimal(bool cond) {sr = cond ? sr | 0x8 : sr & ~0x8;}
-    inline bool get_decimal() const {return sr & 0x8;}
-    inline bool get_overflow() const {return sr & 0x40;}
-    inline void set_negative(bool cond) {sr = cond ? sr | 0x80 : sr & ~0x80;};
-    inline bool get_negative() const {return sr & 0x80;}
+    inline void set_carry(bool cond) {flags = cond ? flags | 0x1 : flags & ~0x1;}
+    inline bool get_carry() const {return flags & 0x1;}
+    inline void set_zero(bool cond) {flags = cond ? flags | 0x2 : flags & ~0x2;}
+    inline bool get_zero() const {return flags & 0x2;}
+    inline void set_disable_interrupt(bool cond) {flags = cond ? flags | 0x4 : flags & ~0x4;}
+    inline bool get_disable_interrupt() const {return flags & 0x4;}
+    inline void set_overflow(bool cond) {flags = cond ? flags | 0x40 : flags & ~0x40;};
+    inline void set_decimal(bool cond) {flags = cond ? flags | 0x8 : flags & ~0x8;}
+    inline bool get_decimal() const {return flags & 0x8;}
+    inline bool get_overflow() const {return flags & 0x40;}
+    inline void set_negative(bool cond) {flags = cond ? flags | 0x80 : flags & ~0x80;};
+    inline bool get_negative() const {return flags & 0x80;}
 };
 
-uint16_t get_addr(CPU *cpu, AddressingMode mode);
 void cpu_reset(CPU *cpu);
 void cpu_init(CPU *cpu, NES *nes);
 uint8_t cpu_read_byte(CPU *cpu, uint16_t addr);

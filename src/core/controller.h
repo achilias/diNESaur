@@ -23,7 +23,6 @@ struct Controller {
 void controller_init(Controller *controller);
 void controller_set_strobe(Controller *controller);
 void controller_clear_strobe(Controller *controller);
-bool controller_(Controller *controller);
 
 // TODO: write explanatory comment
 bool controller_read_serial_bit(Controller *controller);

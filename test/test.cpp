@@ -54,11 +54,11 @@ void TestCPU::mem_locs_test(std::vector<std::tuple<uint16_t, uint8_t>> list) {
     }
 }
 
-void TestCPU::set_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t sr) {
-    this->pc = pc; this->sp = sp; this->accum = accum; this->reg_x = reg_x; this->reg_y = reg_y; this->sr = sr;
+void TestCPU::set_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
+    this->pc = pc; this->sp = sp; this->accum = accum; this->reg_x = reg_x; this->reg_y = reg_y; this->flags = flags;
 };
 
-void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t sr) {
+void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
     TEST_CHECK(this->pc == pc);
     TEST_MSG("pc: expected=0x%04x actual=0x%04x", (unsigned)pc, (unsigned)this->pc);
     TEST_CHECK(this->sp == sp);
@@ -69,8 +69,8 @@ void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, 
     TEST_MSG("reg_x: expected=0x%02x actual=0x%02x", (unsigned)reg_x, (unsigned)this->reg_x);
     TEST_CHECK(this->reg_y == reg_y);
     TEST_MSG("reg_y: expected=0x%02x actual=0x%02x", (unsigned)reg_y, (unsigned)this->reg_y);
-    TEST_CHECK(this->sr == sr);
-    TEST_MSG("sr: expected=0x%02x actual=0x%02x", (unsigned)sr, (unsigned)this->sr);
+    TEST_CHECK(this->flags == flags);
+    TEST_MSG("flags: expected=0x%02x actual=0x%02x", (unsigned)flags, (unsigned)this->flags);
 };
 
 void TestCPU::test_opcode(std::string opcode) {

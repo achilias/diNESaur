@@ -83,7 +83,7 @@ void cpu_write_two_bytes(CPU *cpu, uint16_t addr, uint16_t val) { cpu_write_byte
 
 void CPU::handle_nmi() {
     nes->nmi = false;
-    cpu_write_byte(this, stack_base + sp--, sr | 0x20);
+    cpu_write_byte(this, stack_base + sp--, flags | 0x20);
     cpu_write_two_bytes(this, stack_base + sp, pc);
     sp -= 2; 
     pc = cpu_read_two_bytes(this, 0xfffa);
@@ -100,7 +100,7 @@ void cpu_reset(CPU *cpu) {
     cpu->accum = 0;
     cpu->reg_x = 0;
     cpu->reg_y = 0;
-    cpu->sr = 0;
+    cpu->flags = 0;
     cpu->pc = cpu_read_two_bytes(cpu, 0xfffc);
 }
 
@@ -231,7 +231,7 @@ void bpl(CPU *cpu) {
 void brk(CPU *cpu) {
 	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, ++cpu->pc >> 8);
 	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, cpu->pc & 0xff);
-	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, cpu->sr | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
+	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, cpu->flags | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
 	cpu->set_disable_interrupt(1);
 	cpu->pc = cpu_read_two_bytes(cpu, 0xfffe); // address of irq interrupt handler
 }
@@ -253,7 +253,7 @@ void clc(CPU *cpu) {
 }
 
 void cld(CPU *cpu) {
-	cpu->sr &= ~0x8;
+	cpu->flags &= ~0x8;
 }
 
 void cli(CPU *cpu) {
@@ -395,7 +395,7 @@ void pha(CPU *cpu) {
 }
 
 void php(CPU *cpu) {
-	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, cpu->sr | 0x30);
+	cpu_write_byte(cpu, cpu->stack_base + cpu->sp--, cpu->flags | 0x30);
 }
 
 void pla(CPU *cpu) {
@@ -406,7 +406,7 @@ void pla(CPU *cpu) {
 
 void plp(CPU *cpu) {
 	// ignore break flag (bit 4): 0xef = 11101111 and set extra bit (bit 5): 0x20 = 00100000
-	cpu->sr = 0x20 | (cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp) & 0xef);
+	cpu->flags = 0x20 | (cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp) & 0xef);
 }
 
 void rol(CPU *cpu, AddressingMode addr_mode) {
@@ -446,7 +446,7 @@ void ror(CPU *cpu, AddressingMode addr_mode) {
 }
 
 void rti(CPU *cpu) {
-	cpu->sr = 0x20 | (cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp) & 0xef);
+	cpu->flags = 0x20 | (cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp) & 0xef);
     uint8_t pcl = cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp);
     uint8_t pch = cpu_read_byte(cpu, cpu->stack_base + ++cpu->sp);
 	cpu->pc = (((uint16_t) pch) << 8) | pcl;

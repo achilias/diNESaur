@@ -33,9 +33,11 @@ static uint16_t ram_mirror(uint16_t addr) {
 }
 
 uint8_t cpu_read_byte(CPU *cpu, uint16_t addr) {
-    if (cpu->standalone)
-        return cpu->ram[addr];
-
+#ifdef TEST_BUILD
+    // CPU opcode tests use the entire address space.
+    // NES-specific address mirroring and memory-mapped I/O are bypassed in test builds.
+    return cpu->ram[addr];
+#endif
     // address belongs to cartridge-mapped address space
     if (in_range(addr, 0x4020, 0xffff))
         return cpu->nes->rom->read_byte_prg(addr);
@@ -57,10 +59,12 @@ uint16_t cpu_read_two_bytes(CPU *cpu, uint16_t addr) {
 }
 
 void cpu_write_byte(CPU *cpu, uint16_t addr, uint8_t val) {
-    if (cpu->standalone) {
-        cpu->ram[addr] = val;
-        return;
-    }
+#ifdef TEST_BUILD
+    // CPU opcode tests use the entire address space.
+    // NES-specific address mirroring and memory-mapped I/O are bypassed in test builds.
+    cpu->ram[addr] = val;
+    return;
+#endif
 
     if (in_range(addr, 0x8000, 0xffff)) {
         printf("Error! Attempt to write %p to rom at %p\n", val, addr);

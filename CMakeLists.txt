@@ -36,6 +36,6 @@ SDL3::SDL3-static
 
 enable_testing()
 
-add_executable(nes_emu_test test/test.cpp)
-target_link_libraries(nes_emu_test nes_emu_core)
+add_executable(nes_emu_test test/test.cpp src/core/cpu.cpp)
+target_compile_definitions(nes_emu_test PRIVATE TEST_BUILD)
 add_test(NAME nes_emu_test COMMAND nes_emu_test)

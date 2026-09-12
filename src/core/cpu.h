@@ -15,17 +15,13 @@ struct CPU {
      * - Read and modify controller states
      */
     NES *nes;
-    /* When true, memory access never touches nes at all (used to run pure
-     * 6502 opcode tests against a flat, unmapped ram array).
-     * TODO: this is a temporary runtime flag; move it to a compile-time
-     * macro gated on the test build instead, and drop the field entirely. */
-    bool standalone { false };
-    uint8_t sp { 0xff };
-    uint16_t pc { 0 };
-    uint8_t accum { 0 };
-    uint8_t reg_x { 0 };
-    uint8_t reg_y { 0 };
-    uint8_t flags { 0 };
+
+    uint8_t sp;
+    uint16_t pc;
+    uint8_t accum;
+    uint8_t reg_x;
+    uint8_t reg_y;
+    uint8_t flags;
     uint8_t ram[RAM_SIZE];
 
     void set_carry(bool cond) {flags = cond ? flags | 0x1 : flags & ~0x1;}

@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "nes.h"
+#include <stdbool.h>
 
 #define STACK_BASE 0x100
 
@@ -32,48 +33,52 @@ static uint16_t ram_mirror(uint16_t addr) {
     return addr;
 }
 
+#define FLAGS_NEGATIVE_MASK     0b10000000
+#define FLAGS_OVERFLOW_MASK     0b01000000
+#define FLAGS_DECIMAL_MASK      0b00001000
+#define FLAGS_INHIBIT_IRQ_MASK  0b00000100
+#define FLAGS_ZERO_MASK         0b00000010
+#define FLAGS_CARRY_MASK        0b00000001
 
-static void set_carry(CPU *cpu, bool cond)
+#define SIGN_BIT_MASK           0b10000000
+
+static void set_carry(CPU *cpu, bool condition)
 {
-    cpu->flags = cond ? cpu->flags | 0x1 : cpu->flags & ~0x1;
-}
-static bool get_carry(CPU *cpu)
-{
-    return cpu->flags & 0x1;
-}
-static void set_zero(CPU *cpu, bool cond)
-{
-    cpu->flags = cond ? cpu->flags | 0x2 : cpu->flags & ~0x2;
-}
-static bool get_zero(CPU *cpu)
-{
-    return cpu->flags & 0x2;
-}
-static void set_disable_interrupt(CPU *cpu, bool cond)
-{
-    cpu->flags = cond ? cpu->flags | 0x4 : cpu->flags & ~0x4;
-}
-static void set_overflow(CPU *cpu, bool cond)
-{
-    cpu->flags = cond ? cpu->flags | 0x40 : cpu->flags & ~0x40;
-};
-static void set_decimal(CPU *cpu, bool cond)
-{
-    cpu->flags = cond ? cpu->flags | 0x8 : cpu->flags & ~0x8;
-}
-static bool get_overflow(CPU *cpu)
-{
-    return cpu->flags & 0x40;
-}
-static void set_negative(CPU *cpu, bool cond)
-{
-    cpu->flags = cond ? cpu->flags | 0x80 : cpu->flags & ~0x80;
-};
-static bool get_negative(CPU *cpu)
-{
-    return cpu->flags & 0x80;
+    cpu->flags = condition
+        ? cpu->flags | FLAGS_CARRY_MASK
+        : cpu->flags & ~FLAGS_CARRY_MASK;
 }
 
+static void set_zero(CPU *cpu, bool condition)
+{
+    cpu->flags = condition
+        ? cpu->flags | FLAGS_ZERO_MASK
+        : cpu->flags & ~FLAGS_ZERO_MASK;
+}
+
+static void set_negative(CPU *cpu, bool condition)
+{
+    cpu->flags = condition
+        ? cpu->flags | FLAGS_NEGATIVE_MASK
+        : cpu->flags & ~FLAGS_NEGATIVE_MASK;
+}
+
+static void set_overflow(CPU *cpu, bool condition)
+{
+    cpu->flags = condition
+        ? cpu->flags | FLAGS_OVERFLOW_MASK
+        : cpu->flags & ~FLAGS_OVERFLOW_MASK;
+}
+
+
+/**
+ * Reads one byte from the CPU address space:
+ * - Respects address space mirroring and cartridge memory mapping (see start of file).
+ * - MMIO is used for the cartridge, the PPU, and the controller.
+ * - When TEST_BUILD is defined: MMIO, mirroring and cartridge mapping are disabled and the function has no side effects.
+ *
+ * Important: This function has side effects, as reading from MMIO can change controller or PPU state.
+ */
 uint8_t cpu_read_byte(CPU *cpu, uint16_t addr) {
 #ifdef TEST_BUILD
     // CPU opcode tests use the entire address space.
@@ -213,82 +218,109 @@ uint16_t get_addr(CPU *cpu, AddressingMode mode) {
 }
 
 bool adc(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	uint16_t result = cpu->accum + operand + get_carry(cpu);
-	set_carry(cpu, result > 0xff);
-	result = (uint8_t) result;
-	set_overflow(cpu, (result ^ cpu->accum) & (result ^ operand) & 0x80);
-	cpu->accum = result;
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+	const uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
+    const uint8_t carry = (cpu->flags & FLAGS_CARRY_MASK) != 0;
+	const uint16_t result = cpu->accum + operand + carry;
+
+    set_carry(cpu, result > 0xff);
+
+    const bool operand_signs_match = (cpu->accum & SIGN_BIT_MASK) == (operand & SIGN_BIT_MASK);
+    const bool result_sign_matches = (cpu->accum & SIGN_BIT_MASK) == (result & SIGN_BIT_MASK);
+    set_overflow(cpu, operand_signs_match && !result_sign_matches);
+
+	cpu->accum = (uint8_t) result;
+
+    set_zero(cpu, cpu->accum == 0);
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+
+    cpu->accum = result;
+
     return false;
 }
 
 bool and_(CPU *cpu, AddressingMode addr_mode) {
 	cpu->accum &= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+
+    set_zero(cpu, cpu->accum == 0);
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+
     return false;
 }
 
 void asl(CPU *cpu, AddressingMode addr_mode){
 	if (addr_mode == ACCUMULATOR) {
-		set_carry(cpu, cpu->accum & 0x80);
-		cpu->accum = cpu->accum << 1;
-		set_zero(cpu, cpu->accum == 0);
-		set_negative(cpu, cpu->accum & 0x80);
-		return;
+	    set_carry(cpu, cpu->accum & SIGN_BIT_MASK);
+
+	    cpu->accum = cpu->accum << 1;
+
+	    set_zero(cpu, cpu->accum == 0);
+	    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+
+	    return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t operand = cpu_read_byte(cpu, addr);
-    set_carry(cpu, operand & 0x80);
+
+    set_carry(cpu, operand & SIGN_BIT_MASK);
+    set_negative(cpu, operand & SIGN_BIT_MASK);
+
     uint8_t tmp = operand << 1;
-	cpu_write_byte(cpu, addr, tmp);
+
     set_zero(cpu, tmp == 0);
-    set_negative(cpu, tmp & 0x80);
+    set_negative(cpu, tmp & SIGN_BIT_MASK);
+
+    cpu_write_byte(cpu, addr, tmp);
 }
 
 void bcc(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if (!get_carry(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if (!(cpu->flags & FLAGS_CARRY_MASK))
 		cpu->pc += offset;
 }
 
 void bcs(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if (get_carry(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if (cpu->flags & FLAGS_CARRY_MASK)
 		cpu->pc += offset;
 }
 
 void beq(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(get_zero(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(cpu->flags & FLAGS_ZERO_MASK)
 		cpu->pc += offset;
 }
 
 void bit(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	uint8_t tmp = cpu->accum & operand;
-	set_zero(cpu, tmp == 0);
-	set_overflow(cpu, operand & 0x40);
-	set_negative(cpu, operand & 0x80);
+
+    set_zero(cpu, (cpu->accum & operand) == 0);
+
+    set_overflow(cpu, operand & 0b01000000);
+
+    set_negative(cpu, operand & 0b10000000);
 }
 
 void bmi(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(get_negative(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(cpu->flags & FLAGS_NEGATIVE_MASK)
 		cpu->pc += offset;
 }
 
 void bne(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(!get_zero(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(!(cpu->flags & FLAGS_ZERO_MASK))
 		cpu->pc += offset;
 }
 
 void bpl(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(!get_negative(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(!(cpu->flags & FLAGS_NEGATIVE_MASK))
 		cpu->pc += offset;
 }
 
@@ -296,102 +328,125 @@ void brk(CPU *cpu) {
 	cpu_write_byte(cpu, STACK_BASE + cpu->sp--, ++cpu->pc >> 8);
 	cpu_write_byte(cpu, STACK_BASE + cpu->sp--, cpu->pc & 0xff);
 	cpu_write_byte(cpu, STACK_BASE + cpu->sp--, cpu->flags | 0x30); // break flag and extra bit (bits 4 & 5) should always be set: 0x30 = 00110000
-	set_disable_interrupt(cpu, 1);
+
+    cpu->flags |= FLAGS_INHIBIT_IRQ_MASK;
+
 	cpu->pc = cpu_read_two_bytes(cpu, 0xfffe); // address of irq interrupt handler
 }
 
 void bvc(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(!get_overflow(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(!(cpu->flags & FLAGS_OVERFLOW_MASK))
 		cpu->pc += offset;
 }
 
 void bvs(CPU *cpu) {
-	auto offset = (int8_t) cpu_read_byte(cpu, cpu->pc++);
-	if(get_overflow(cpu))
+	const int8_t offset = cpu_read_byte(cpu, cpu->pc++);
+
+	if(cpu->flags & FLAGS_OVERFLOW_MASK)
 		cpu->pc += offset;
 }
 
 void clc(CPU *cpu) {
-	set_carry(cpu, 0);
+    cpu->flags &= ~FLAGS_CARRY_MASK;
 }
 
 void cld(CPU *cpu) {
-	cpu->flags &= ~0x8;
+	cpu->flags &= ~FLAGS_DECIMAL_MASK;
 }
 
 void cli(CPU *cpu) {
-	set_disable_interrupt(cpu, 0);
+    cpu->flags &= ~FLAGS_INHIBIT_IRQ_MASK;
 }
 
 void clv(CPU *cpu) {
-	set_overflow(cpu, 0);
+    cpu->flags &= ~FLAGS_OVERFLOW_MASK;
 }
 
 void cmp(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_carry(cpu, cpu->accum >= operand);
+    set_carry(cpu, cpu->accum >= operand);
 	auto result = (int8_t) (cpu->accum - operand);
-	set_zero(cpu, result == 0);
-	set_negative(cpu, result < 0);
+
+    set_zero(cpu, result == 0);
+
+    set_negative(cpu, result < 0);
 }
 
 void cpx(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_carry(cpu, cpu->reg_x >= operand);
+    set_carry(cpu, cpu->reg_x >= operand);
 	auto result = (int8_t) (cpu->reg_x - operand);
-	set_zero(cpu, result == 0);
-	set_negative(cpu, result < 0);
+
+    set_zero(cpu, result == 0);
+
+    set_negative(cpu, result < 0);
 }
 
 void cpy(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_carry(cpu, cpu->reg_y >= operand);
+    set_carry(cpu, cpu->reg_y >= operand);
 	auto result = (int8_t) (cpu->reg_y - operand);
-	set_zero(cpu, result == 0);
-	set_negative(cpu, result < 0);
+
+    set_zero(cpu, result == 0);
+
+    set_negative(cpu, result < 0);
+
 }
 
 void dec(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr) - 1;
-	set_zero(cpu, tmp == 0);
-	set_negative(cpu, tmp & 0x80);
-	cpu_write_byte(cpu, addr, tmp);
+
+    set_zero(cpu, tmp == 0);
+
+    set_negative(cpu, tmp & SIGN_BIT_MASK);
+
+    cpu_write_byte(cpu, addr, tmp);
 }
 
 void dex(CPU *cpu) {
-	set_zero(cpu, --cpu->reg_x == 0);
-	set_negative(cpu, cpu->reg_x & 0x80);
+    set_zero(cpu, --cpu->reg_x == 0);
+
+    set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
 void dey(CPU *cpu) {
-	set_zero(cpu, --cpu->reg_y == 0);
-	set_negative(cpu, cpu->reg_y & 0x80);
+    cpu->reg_y--;
+
+    set_zero(cpu, cpu->reg_y == 0);
+
+    set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
 void eor(CPU *cpu, AddressingMode addr_mode) {
 	cpu->accum ^= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+    set_zero(cpu, cpu->accum == 0);
+
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 void inc(CPU *cpu, AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr) + 1;
-	set_zero(cpu, tmp == 0);
-	set_negative(cpu, tmp & 0x80);
-	cpu_write_byte(cpu, addr, tmp);
+    set_zero(cpu, tmp == 0);
+
+    set_negative(cpu, tmp & SIGN_BIT_MASK);
+
+    cpu_write_byte(cpu, addr, tmp);
 }
 
 void inx(CPU *cpu) {
-	set_zero(cpu, ++cpu->reg_x == 0);
-	set_negative(cpu, cpu->reg_x & 0x80);
+    set_zero(cpu, ++cpu->reg_x == 0);
+
+    set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
 void iny(CPU *cpu) {
-	set_zero(cpu, ++cpu->reg_y == 0);
-	set_negative(cpu, cpu->reg_y & 0x80);
+    set_zero(cpu, ++cpu->reg_y == 0);
+
+    set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
 void jmp(CPU *cpu, AddressingMode addr_mode) {
@@ -415,43 +470,48 @@ void jsr(CPU *cpu) {
 
 void lda(CPU *cpu, AddressingMode addr_mode) {
 	cpu->accum = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+    set_zero(cpu, cpu->accum == 0);
+
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 void ldx(CPU *cpu, AddressingMode addr_mode) {
 	cpu->reg_x = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->reg_x == 0);
-	set_negative(cpu, cpu->reg_x & 0x80);
+    set_zero(cpu, cpu->reg_x == 0);
+
+    set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
 void ldy(CPU *cpu, AddressingMode addr_mode) {
 	cpu->reg_y = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->reg_y == 0);
-	set_negative(cpu, cpu->reg_y & 0x80);
+    set_zero(cpu, cpu->reg_y == 0);
+    set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
 void lsr(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
-		set_carry(cpu, cpu->accum & 0x1);
+        set_carry(cpu, cpu->accum & 0x1);
 		cpu->accum = cpu->accum >> 1;
-		set_zero(cpu, cpu->accum == 0);
-		set_negative(cpu, cpu->accum & 0x80);
-		return;
+        set_zero(cpu, cpu->accum == 0);
+	    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+	    return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr);
-	set_carry(cpu, tmp & 0x1);
+    set_carry(cpu, tmp & 0x1);
 	tmp = tmp >> 1;
-	set_zero(cpu, tmp == 0);
-	set_negative(cpu, tmp & 0x80);
+
+    set_zero(cpu, tmp == 0);
+
+    set_negative(cpu, tmp & SIGN_BIT_MASK);
+
 	cpu_write_byte(cpu, addr, tmp);
 }
 
 void ora(CPU *cpu, AddressingMode addr_mode) {
 	cpu->accum |= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+    set_zero(cpu, cpu->accum == 0);
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 void pha(CPU *cpu) {
@@ -464,8 +524,8 @@ void php(CPU *cpu) {
 
 void pla(CPU *cpu) {
 	cpu->accum = cpu_read_byte(cpu, STACK_BASE + ++cpu->sp);
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+    set_zero(cpu, cpu->accum == 0);
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 void plp(CPU *cpu) {
@@ -475,38 +535,50 @@ void plp(CPU *cpu) {
 
 void rol(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
-		uint8_t tmp = (cpu->accum << 1) | get_carry(cpu);
-		set_carry(cpu, cpu->accum & 0x80);
+		uint8_t tmp = (cpu->accum << 1) | (cpu->flags & FLAGS_CARRY_MASK);
+        set_carry(cpu, cpu->accum & 0x80);
 		cpu->accum = tmp;
-		set_zero(cpu, cpu->accum == 0);
-		set_negative(cpu, cpu->accum & 0x80);
-		return;
+        set_zero(cpu, cpu->accum == 0);
+	    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+	    return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr);
-	uint8_t tmp_ = (tmp << 1) | get_carry(cpu);
-	set_carry(cpu, tmp & 0x80);
-	set_zero(cpu, tmp_ == 0);
-	set_negative(cpu, tmp_ & 0x80);
-	cpu_write_byte(cpu, addr, tmp_);
+	uint8_t tmp_ = (tmp << 1) | (cpu->flags & FLAGS_CARRY_MASK);
+
+    set_carry(cpu, tmp & 0b10000000);
+
+    set_zero(cpu, tmp_ == 0);
+
+    set_negative(cpu, tmp_ & SIGN_BIT_MASK);
+
+    cpu_write_byte(cpu, addr, tmp_);
 }
 
 void ror(CPU *cpu, AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
-		uint8_t tmp = (cpu->accum >> 1) | (((uint8_t) get_carry(cpu)) << 7);
-		set_carry(cpu, cpu->accum & 0x1);
-		cpu->accum = tmp;
-		set_zero(cpu, cpu->accum == 0);
-		set_negative(cpu, cpu->accum & 0x80);
-		return;
+		uint8_t tmp = (cpu->accum >> 1) | ((uint8_t) (cpu->flags & FLAGS_CARRY_MASK) << 7);
+
+	    set_carry(cpu, cpu->accum & 0b1);
+
+	    cpu->accum = tmp;
+
+	    set_zero(cpu, cpu->accum == 0);
+
+	    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
+	    return;
 	}
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr);
-	uint8_t tmp_ = (tmp >> 1) | (((uint8_t) get_carry(cpu)) << 7);
-	set_carry(cpu, tmp & 0x1);
-	set_zero(cpu, tmp_ == 0);
-	set_negative(cpu, tmp_ & 0x80);
-	cpu_write_byte(cpu, addr, tmp_);
+	uint8_t tmp_ = (tmp >> 1) | ((uint8_t) (cpu->flags & FLAGS_CARRY_MASK) << 7);
+
+    set_carry(cpu, tmp & 0b1);
+
+    set_zero(cpu, tmp_ == 0);
+
+    set_negative(cpu, tmp_ & SIGN_BIT_MASK);
+
+    cpu_write_byte(cpu, addr, tmp_);
 }
 
 void rti(CPU *cpu) {
@@ -523,26 +595,34 @@ void rts(CPU *cpu) {
 }
 
 void sbc(CPU *cpu, AddressingMode addr_mode) {
-	uint8_t operand = ~cpu_read_byte(cpu, get_addr(cpu, addr_mode));
-	uint16_t result = cpu->accum + operand + get_carry(cpu);
-	set_carry(cpu, result > 0xff);
-	result = (uint8_t) result;
-	set_overflow(cpu, (result ^ cpu->accum) & (result ^ operand) & 0x80);
-	cpu->accum = result;
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+	const uint8_t operand = ~cpu_read_byte(cpu, get_addr(cpu, addr_mode));
+    const uint8_t carry = (cpu->flags & FLAGS_CARRY_MASK) != 0;
+	const uint16_t result = cpu->accum + operand + carry;
+
+    set_carry(cpu, result > 0xff);
+
+    const bool operand_signs_match = (cpu->accum & SIGN_BIT_MASK) == (operand & SIGN_BIT_MASK);
+    const bool result_sign_matches = (cpu->accum & SIGN_BIT_MASK) == (result & SIGN_BIT_MASK);
+
+    set_overflow(cpu, operand_signs_match && !result_sign_matches);
+
+	cpu->accum = (uint8_t) result;
+
+    set_zero(cpu, cpu->accum == 0);
+
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 void sec(CPU *cpu) {
-	set_carry(cpu, 1);
+    cpu->flags |= FLAGS_CARRY_MASK;
 }
 
 void sed(CPU *cpu) {
-	set_decimal(cpu, 1);
+    cpu->flags |= FLAGS_DECIMAL_MASK;
 }
 
 void sei(CPU *cpu) {
-	set_disable_interrupt(cpu, 1);
+    cpu-> flags |= FLAGS_INHIBIT_IRQ_MASK;
 }
 
 void sta(CPU *cpu, AddressingMode addr_mode) {
@@ -562,26 +642,32 @@ void sty(CPU *cpu, AddressingMode addr_mode) {
 
 void tax(CPU *cpu) {
 	cpu->reg_x = cpu->accum;
-	set_zero(cpu, cpu->reg_x == 0);
-	set_negative(cpu, cpu->reg_x & 0x80);
+
+    set_zero(cpu, cpu->reg_x == 0);
+
+    set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
 void tay(CPU *cpu) {
 	cpu->reg_y = cpu->accum;
-	set_zero(cpu, cpu->reg_y == 0);
-	set_negative(cpu, cpu->reg_y & 0x80);
+
+    set_zero(cpu, cpu->reg_y == 0);
+
+    set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
 void tsx(CPU *cpu) {
 	cpu->reg_x = cpu->sp;
-	set_zero(cpu, cpu->reg_x == 0);
-	set_negative(cpu, cpu->reg_x & 0x80);
+    set_zero(cpu, cpu->reg_x == 0);
+    set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
 void txa(CPU *cpu) {
 	cpu->accum = cpu->reg_x;
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+
+    set_zero(cpu, cpu->accum == 0);
+
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 static void txs(CPU *cpu) {
@@ -590,8 +676,10 @@ static void txs(CPU *cpu) {
 
 static void tya(CPU *cpu) {
 	cpu->accum = cpu->reg_y;
-	set_zero(cpu, cpu->accum == 0);
-	set_negative(cpu, cpu->accum & 0x80);
+
+    set_zero(cpu, cpu->accum == 0);
+
+    set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
 size_t cpu_execute_instruction(CPU *cpu) {

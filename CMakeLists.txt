@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_ARCHITECTURES arm64)
 
-project(nes-emu LANGUAGES CXX)
+project(nes-emu LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,7 +12,8 @@ set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(vendor/SDL)
 
-add_library(nes_emu_core STATIC src/core/cpu.cpp src/core/ppu.cpp src/core/rom.cpp src/core/controller.cpp src/core/nes.cpp)
+add_library(nes_emu_core STATIC src/core/cpu.cpp src/core/ppu.cpp src/core/rom.cpp src/core/controller.c src/core/nes.cpp)
+set_target_properties(nes_emu_core PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
 add_executable(nes_emu src/main.cpp src/display.cpp src/input.cpp)

@@ -4,7 +4,7 @@
 void nes_init(NES *nes, std::ifstream& file)
 {
     nes->rom = new ROM(file);
-    nes->controller = new Controller();
+    nes->controller = controller_create();
 
     nes->cpu = new CPU();
     cpu_init(nes->cpu, nes);

@@ -15,20 +15,19 @@ void poll_for_input(Controller *controller, bool* should_exit) {
         if (e.type != SDL_EVENT_KEY_DOWN && e.type != SDL_EVENT_KEY_UP)
             continue;
 
-        ControllerState button;
+        enum Button button;
         switch (e.key.key) {
             case SDLK_ESCAPE:   *should_exit = true;         return;
-            case SDLK_Z:        button = ControllerState::SELECT; break;
-            case SDLK_X:        button = ControllerState::START;  break;
-            case SDLK_DOWN:     button = ControllerState::DOWN;   break;
-            case SDLK_UP:       button = ControllerState::UP;     break;
-            case SDLK_LEFT:     button = ControllerState::LEFT;   break;
-            case SDLK_RIGHT:    button = ControllerState::RIGHT;  break;
-            case SDLK_A:        button = ControllerState::A;      break;
-            case SDLK_B:        button = ControllerState::B;      break;
+            case SDLK_Z:        button = SELECT; break;
+            case SDLK_X:        button = START;  break;
+            case SDLK_DOWN:     button = DOWN;   break;
+            case SDLK_UP:       button = UP;     break;
+            case SDLK_LEFT:     button = LEFT;   break;
+            case SDLK_RIGHT:    button = RIGHT;  break;
+            case SDLK_A:        button = A;      break;
+            case SDLK_B:        button = B;      break;
             default:            continue;
         }
-        auto index = static_cast<int>(button);
-        controller->button_states[index] = e.type == SDL_EVENT_KEY_DOWN;
+        controller_set_button(controller, button, e.type == SDL_EVENT_KEY_DOWN);
     }
 }

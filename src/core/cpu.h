@@ -24,18 +24,6 @@ struct CPU {
     uint8_t flags;
     uint8_t ram[RAM_SIZE];
 
-    void set_carry(bool cond) {flags = cond ? flags | 0x1 : flags & ~0x1;}
-    bool get_carry() const {return flags & 0x1;}
-    void set_zero(bool cond) {flags = cond ? flags | 0x2 : flags & ~0x2;}
-    bool get_zero() const {return flags & 0x2;}
-    void set_disable_interrupt(bool cond) {flags = cond ? flags | 0x4 : flags & ~0x4;}
-    bool get_disable_interrupt() const {return flags & 0x4;}
-    void set_overflow(bool cond) {flags = cond ? flags | 0x40 : flags & ~0x40;};
-    void set_decimal(bool cond) {flags = cond ? flags | 0x8 : flags & ~0x8;}
-    bool get_decimal() const {return flags & 0x8;}
-    bool get_overflow() const {return flags & 0x40;}
-    void set_negative(bool cond) {flags = cond ? flags | 0x80 : flags & ~0x80;};
-    bool get_negative() const {return flags & 0x80;}
 };
 
 void cpu_reset(CPU *cpu);

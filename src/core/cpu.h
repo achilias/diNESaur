@@ -31,8 +31,7 @@ typedef struct CPU {
 extern "C" {
 #endif
 
-void cpu_reset(CPU *cpu);
-void cpu_init(CPU *cpu, struct NES *nes);
+CPU *cpu_create(struct NES *nes);
 size_t cpu_execute_instruction(CPU *cpu);
 void cpu_handle_nmi(CPU *cpu);
 

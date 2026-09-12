@@ -8,8 +8,7 @@ void nes_init(NES *nes, FILE *file)
     nes->rom = rom_create(file);
     nes->controller = controller_create();
 
-    nes->cpu = new CPU();
-    cpu_init(nes->cpu, nes);
+    nes->cpu = cpu_create(nes);
 
     nes->ppu = ppu_create(nes);
 }

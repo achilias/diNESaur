@@ -1,7 +1,6 @@
 #define OPCODE_TEST(func, op)               \
 void func##_opcode_##op(void) {             \
-    CPU *cpu = new CPU();                   \
-    cpu_init(cpu, nullptr);                 \
+    CPU *cpu = cpu_create(nullptr);                   \
     test_opcode(cpu, #op);                  \
 }
 

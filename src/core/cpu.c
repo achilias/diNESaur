@@ -159,13 +159,11 @@ void cpu_handle_nmi(CPU *cpu) {
     cpu->pc = cpu_read_two_bytes(cpu, 0xfffa);
 }
 
-void cpu_init(CPU *cpu, NES *nes)
+CPU *cpu_create(NES *nes)
 {
+    CPU *cpu = malloc(sizeof(*cpu));
     cpu->nes = nes;
-    cpu_reset(cpu);
-}
 
-void cpu_reset(CPU *cpu) {
     memset(cpu->ram, 0, sizeof(cpu->ram));
 
     cpu->sp = 0xff;
@@ -174,6 +172,8 @@ void cpu_reset(CPU *cpu) {
     cpu->reg_y = 0;
     cpu->flags = 0;
     cpu->pc = cpu_read_two_bytes(cpu, 0xfffc);
+
+    return cpu;
 }
 
 uint16_t get_addr(CPU *cpu, enum AddressingMode mode) {

@@ -87,7 +87,7 @@ uint8_t cpu_read_byte(CPU *cpu, uint16_t addr) {
 #endif
     // address belongs to cartridge-mapped address space
     if (in_range(addr, 0x4020, 0xffff))
-        return cpu->nes->rom->read_byte_prg(addr);
+        return rom_read_byte_prg(cpu->nes->rom, addr);
 
     switch (ram_mirror(addr)) {
         case 0x2002:

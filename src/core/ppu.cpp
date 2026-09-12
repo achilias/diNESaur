@@ -9,7 +9,7 @@ static uint16_t vram_mirror(uint16_t addr, ROM const *rom) {
     if (in_range(addr, 0, 0x1fff))
         return addr % rom->chr_size;
 
-    if (rom->nt_mirror == MirrorMode::HORIZONTAL) {
+    if (rom->nt_mirror == HORIZONTAL) {
         if (in_range(addr, 0x2000, 0x23ff))
             return addr;
         if (in_range(addr, 0x2400, 0x27ff))
@@ -20,7 +20,7 @@ static uint16_t vram_mirror(uint16_t addr, ROM const *rom) {
             return addr - 0x400;
     }
 
-    if (rom->nt_mirror == MirrorMode::VERTICAL) {
+    if (rom->nt_mirror == VERTICAL) {
         if (in_range(addr, 0x2000, 0x23ff))
             return addr;
         if (in_range(addr, 0x2400, 0x27ff))
@@ -38,7 +38,7 @@ static uint16_t vram_mirror(uint16_t addr, ROM const *rom) {
 
 uint8_t ppu_read_vram_byte(PPU *ppu, uint16_t addr) {
     if (in_range(addr, 0x0, 0x1fff))
-        return ppu->nes->rom->read_byte_chr(vram_mirror(addr, ppu->nes->rom));
+        return rom_read_byte_chr(ppu->nes->rom, vram_mirror(addr, ppu->nes->rom));
 
     return ppu->vram[vram_mirror(addr, ppu->nes->rom)];
 };

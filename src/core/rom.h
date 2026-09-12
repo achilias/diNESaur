@@ -1,29 +1,33 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
-#include <fstream>
+#include <stdint.h>
+#include <stdio.h>
 
 #define SIGNATURE "NES\x1A" // start of file magic bytes, ASCII string "NES" + "^Z" (msdos EOF)
 
-enum class MirrorMode {
+enum MirrorMode {
     HORIZONTAL,
     VERTICAL
 };
 
-class ROM {
-public:
-    ROM() = default; // for testing with dummy empty roms
-    explicit ROM(std::ifstream &stream); 
+typedef struct ROM {
     uint32_t prg_size;
     uint32_t chr_size;
     uint8_t mapper;
-    MirrorMode nt_mirror;
+    enum MirrorMode nt_mirror;
+    uint8_t *prg_data;
+    uint8_t *chr_data;
+} ROM;
 
-    uint8_t read_byte_prg(uint16_t addr) const;
-    uint8_t read_byte_chr(uint16_t addr) const;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-private:
-    std::vector<uint8_t> prg_data {};
-    std::vector<uint8_t> chr_data {};
-};
+ROM *rom_create(FILE *stream);
+void rom_destroy(ROM *rom);
+uint8_t rom_read_byte_prg(const ROM *rom, uint16_t addr);
+uint8_t rom_read_byte_chr(const ROM *rom, uint16_t addr);
+
+#ifdef __cplusplus
+}
+#endif

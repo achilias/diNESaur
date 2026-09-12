@@ -1,5 +1,4 @@
-#include <fstream>
-#include <ios>
+#include <stdio.h>
 
 #include "core/nes.h"
 #include "display.h"
@@ -12,12 +11,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::ifstream file = std::ifstream(argv[1], std::ios::binary);
+    FILE *file = fopen(argv[1], "rb");
 
     display_init();
 
     NES nes;
     nes_init(&nes, file);
+    fclose(file);
 
     nes_run(&nes, &render_and_draw, &poll_for_input);
 

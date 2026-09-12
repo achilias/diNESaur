@@ -1,9 +1,9 @@
 #include "nes.h"
 #include "../input.h"
 
-void nes_init(NES *nes, std::ifstream& file)
+void nes_init(NES *nes, FILE *file)
 {
-    nes->rom = new ROM(file);
+    nes->rom = rom_create(file);
     nes->controller = controller_create();
 
     nes->cpu = new CPU();

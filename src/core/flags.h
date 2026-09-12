@@ -1,4 +1,3 @@
-#include <cstdint>
 
 #define PPUCTRL_NT(ppuctrl)                         ((ppuctrl) & 0b11)
 #define PPUCTRL_SET_NT(ppuctrl, val)                {ppuctrl = ((ppuctrl) & ~0b11) | (val) & 0b11;}

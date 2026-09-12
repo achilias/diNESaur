@@ -11,8 +11,7 @@ void nes_init(NES *nes, FILE *file)
     nes->cpu = new CPU();
     cpu_init(nes->cpu, nes);
 
-    nes->ppu = new PPU();
-    ppu_init(nes->ppu, nes);
+    nes->ppu = ppu_create(nes);
 }
 
 void nes_run(NES *nes, DrawingCallback draw, InputPollingCallback poll_for_input)

@@ -127,19 +127,18 @@ void ppu_write_register(PPU *ppu, uint16_t addr, uint8_t val) {
     }
 }
 
-void ppu_reset(PPU *ppu) {
+PPU *ppu_create(NES *nes)
+{
+	PPU *ppu = malloc(sizeof(*ppu));
+	ppu->ignore_ctrl_writes = true;
+	ppu->nes = nes;
 	ppu->scanline_pixel = 0;
 	ppu->scanline_n = 0;
 	for (size_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
+	{
 		ppu->framebuffer[i] = 0xff000000;
-}
-
-void ppu_init(PPU *ppu, NES *nes)
-{
-	*ppu = (PPU){0};
-	ppu->ignore_ctrl_writes = true;
-	ppu->nes = nes;
-	ppu_reset(ppu);
+	}
+	return ppu;
 }
 
 bool ppu_run(PPU *ppu, size_t cycles) {

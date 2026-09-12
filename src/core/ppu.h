@@ -35,8 +35,7 @@ struct PPU {
 extern "C" {
 #endif
 
-void ppu_reset(PPU *ppu);
-void ppu_init(PPU *ppu, struct NES *nes);
+PPU *ppu_create(struct NES *nes);
 bool ppu_run(PPU *ppu, size_t cycles);
 void ppu_draw_tile(PPU *ppu, uint32_t tile_n, uint32_t base_x, uint32_t base_y);
 void ppu_draw_sprite(PPU *ppu, uint8_t sprite_n);

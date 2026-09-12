@@ -1,7 +1,9 @@
-#define OPCODE_TEST(func, op)             \
-void func##_opcode_##op(void) {       \
-TestCPU cpu;                 \
-cpu.test_opcode(#op);       \
+#define OPCODE_TEST(func, op)               \
+void func##_opcode_##op(void) {             \
+    CPU *cpu = new CPU();                   \
+    cpu->standalone = true;                 \
+    cpu_init(cpu, nullptr);                 \
+    test_opcode(cpu, #op);                  \
 }
 
 #define OPCODE_TEST_ENTRY(func, op) { #func "_opcode_" #op, func##_opcode_##op },

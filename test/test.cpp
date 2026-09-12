@@ -1,12 +1,11 @@
 #include "acutest.h"
 
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include "json.h"
-#include "test_cpu.h"
 #include "macros.h"
+#include "../src/core/cpu.h"
 
 namespace {
 
@@ -39,41 +38,44 @@ std::vector<std::tuple<uint16_t, uint8_t>> json_as_ram(json_value_s *value) {
 
 }
 
-void TestCPU::mem_locs_set(std::vector<std::tuple<uint16_t, uint8_t>> list) {
+void mem_locs_set(CPU *cpu, std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
-        cpu_write_byte(this, std::get<0>(*iter), std::get<1>(*iter));
+        uint16_t addr = std::get<0>(*iter);
+        uint8_t val = std::get<1>(*iter);
+
+        cpu->ram[addr] = val;
     }
 }
 
-void TestCPU::mem_locs_test(std::vector<std::tuple<uint16_t, uint8_t>> list) {
+void mem_locs_test(CPU *cpu, std::vector<std::tuple<uint16_t, uint8_t>> list) {
     for (auto iter = list.begin(); iter != list.end(); iter++) {
         uint8_t expected = std::get<1>(*iter);
-        uint8_t byte = cpu_read_byte(this, std::get<0>(*iter));
+        uint8_t byte = cpu->ram[std::get<0>(*iter)];
         TEST_CHECK(byte == expected);
         TEST_MSG("addr=0x%04x expected=0x%02x actual=0x%02x", std::get<0>(*iter), (unsigned)expected, (unsigned)byte);
     }
 }
 
-void TestCPU::set_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
-    this->pc = pc; this->sp = sp; this->accum = accum; this->reg_x = reg_x; this->reg_y = reg_y; this->flags = flags;
+void set_state(CPU *cpu, uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
+    cpu->pc = pc; cpu->sp = sp; cpu->accum = accum; cpu->reg_x = reg_x; cpu->reg_y = reg_y; cpu->flags = flags;
 };
 
-void TestCPU::test_state(uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
-    TEST_CHECK(this->pc == pc);
-    TEST_MSG("pc: expected=0x%04x actual=0x%04x", (unsigned)pc, (unsigned)this->pc);
-    TEST_CHECK(this->sp == sp);
-    TEST_MSG("sp: expected=0x%02x actual=0x%02x", (unsigned)sp, (unsigned)this->sp);
-    TEST_CHECK(this->accum == accum);
-    TEST_MSG("accum: expected=0x%02x actual=0x%02x", (unsigned)accum, (unsigned)this->accum);
-    TEST_CHECK(this->reg_x == reg_x);
-    TEST_MSG("reg_x: expected=0x%02x actual=0x%02x", (unsigned)reg_x, (unsigned)this->reg_x);
-    TEST_CHECK(this->reg_y == reg_y);
-    TEST_MSG("reg_y: expected=0x%02x actual=0x%02x", (unsigned)reg_y, (unsigned)this->reg_y);
-    TEST_CHECK(this->flags == flags);
-    TEST_MSG("flags: expected=0x%02x actual=0x%02x", (unsigned)flags, (unsigned)this->flags);
+void test_state(CPU *cpu, uint16_t pc, uint8_t sp, uint8_t accum, uint8_t reg_x, uint8_t reg_y, uint8_t flags) {
+    TEST_CHECK(cpu->pc == pc);
+    TEST_MSG("pc: expected=0x%04x actual=0x%04x", (unsigned)pc, (unsigned)cpu->pc);
+    TEST_CHECK(cpu->sp == sp);
+    TEST_MSG("sp: expected=0x%02x actual=0x%02x", (unsigned)sp, (unsigned)cpu->sp);
+    TEST_CHECK(cpu->accum == accum);
+    TEST_MSG("accum: expected=0x%02x actual=0x%02x", (unsigned)accum, (unsigned)cpu->accum);
+    TEST_CHECK(cpu->reg_x == reg_x);
+    TEST_MSG("reg_x: expected=0x%02x actual=0x%02x", (unsigned)reg_x, (unsigned)cpu->reg_x);
+    TEST_CHECK(cpu->reg_y == reg_y);
+    TEST_MSG("reg_y: expected=0x%02x actual=0x%02x", (unsigned)reg_y, (unsigned)cpu->reg_y);
+    TEST_CHECK(cpu->flags == flags);
+    TEST_MSG("flags: expected=0x%02x actual=0x%02x", (unsigned)flags, (unsigned)cpu->flags);
 };
 
-void TestCPU::test_opcode(std::string opcode) {
+void test_opcode(CPU *cpu, std::string opcode) {
     std::ifstream f("../test/65x02/nes6502/v1/" + opcode + ".json");
     std::stringstream buffer;
     buffer << f.rdbuf();
@@ -91,20 +93,20 @@ void TestCPU::test_opcode(std::string opcode) {
 
         json_value_s *init = json_get(test_case, "initial");
 
-        set_state(json_as_uint(json_get(init, "pc")), json_as_uint(json_get(init, "s")),
+        set_state(cpu, json_as_uint(json_get(init, "pc")), json_as_uint(json_get(init, "s")),
                    json_as_uint(json_get(init, "a")), json_as_uint(json_get(init, "x")),
                    json_as_uint(json_get(init, "y")), json_as_uint(json_get(init, "p")));
 
-        mem_locs_set(json_as_ram(json_get(init, "ram")));
+        mem_locs_set(cpu, json_as_ram(json_get(init, "ram")));
 
-        execute_instr();
+        cpu->execute_instr();
 
         json_value_s *final = json_get(test_case, "final");
 
-        test_state(json_as_uint(json_get(final, "pc")), json_as_uint(json_get(final, "s")),
+        test_state(cpu, json_as_uint(json_get(final, "pc")), json_as_uint(json_get(final, "s")),
                     json_as_uint(json_get(final, "a")), json_as_uint(json_get(final, "x")),
                     json_as_uint(json_get(final, "y")), json_as_uint(json_get(final, "p")));
-        mem_locs_test(json_as_ram(json_get(final, "ram")));
+        mem_locs_test(cpu, json_as_ram(json_get(final, "ram")));
     }
 
     std::free(root);

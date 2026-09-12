@@ -16,7 +16,8 @@ add_library(nes_emu_core STATIC src/core/cpu.cpp src/core/ppu.cpp src/core/rom.c
 set_target_properties(nes_emu_core PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 target_link_libraries(nes_emu_core PRIVATE SDL3::SDL3-static)
 
-add_executable(nes_emu src/main.cpp src/display.cpp src/input.cpp)
+add_executable(nes_emu src/main.cpp src/display.cpp src/input.c)
+set_target_properties(nes_emu PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
 
 
 if (APPLE)

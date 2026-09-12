@@ -3,18 +3,17 @@
 #include "ppu.h"
 #include "rom.h"
 #include "controller.h"
-#include "cpu.h"
 
-#include <array>
+typedef struct CPU CPU;
 
-struct NES
+typedef struct NES
 {
     CPU *cpu;
     PPU *ppu;
     ROM *rom;
     Controller *controller;
-    bool nmi { false };
-};
+    bool nmi;
+} NES;
 
 typedef void (*DrawingCallback)(uint32_t*);
 typedef void (*InputPollingCallback)(Controller*, bool*);

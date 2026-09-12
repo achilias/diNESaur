@@ -1,8 +1,10 @@
 #include "nes.h"
+#include "cpu.h"
 #include "../input.h"
 
 void nes_init(NES *nes, FILE *file)
 {
+    nes->nmi = false;
     nes->rom = rom_create(file);
     nes->controller = controller_create();
 
@@ -30,8 +32,8 @@ void nes_run(NES *nes, DrawingCallback draw, InputPollingCallback poll_for_input
         }
         cycles += cpu_execute_instruction(nes->cpu);
         bool before = nes->nmi;
-        if (nes->ppu->run(3 * cycles)) {
-            draw(nes->ppu->framebuffer.data());
+        if (ppu_run(nes->ppu, 3 * cycles)) {
+            draw(nes->ppu->framebuffer);
         }
         bool after = nes->nmi;
         nmi = PPUSTATUS_VBLANK(nes->ppu->ppu_status) && !before && after;

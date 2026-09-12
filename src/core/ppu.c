@@ -1,5 +1,7 @@
 #include "ppu.h"
 #include "nes.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 static bool in_range(uint16_t addr, uint16_t start, uint16_t end) {
     return addr >= start && addr <= end;
@@ -41,21 +43,21 @@ uint8_t ppu_read_vram_byte(PPU *ppu, uint16_t addr) {
         return rom_read_byte_chr(ppu->nes->rom, vram_mirror(addr, ppu->nes->rom));
 
     return ppu->vram[vram_mirror(addr, ppu->nes->rom)];
-};
+}
 
-uint16_t ppu_read_vram_two_bytes(PPU *ppu, uint16_t addr) { return ((uint16_t) ppu->vram[vram_mirror(addr + 1, ppu->nes->rom)]) << 8 | ppu->vram[vram_mirror(addr, ppu->nes->rom)]; };
+uint16_t ppu_read_vram_two_bytes(PPU *ppu, uint16_t addr) { return ((uint16_t) ppu->vram[vram_mirror(addr + 1, ppu->nes->rom)]) << 8 | ppu->vram[vram_mirror(addr, ppu->nes->rom)]; }
 
 void ppu_write_vram_byte(PPU *ppu, uint16_t addr, uint8_t val) {
     addr = vram_mirror(addr, ppu->nes->rom);
-    if (addr > ppu->vram.size()) {
+    if (addr > sizeof(ppu->vram)) {
         printf("Out of bounds vram %p\n", addr);
 
         exit(0);
     }
     ppu->vram[addr] = val;
-};
+}
 
-void ppu_write_vram_two_bytes(PPU *ppu, uint16_t addr, uint16_t val) { ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom), (uint8_t) (val & 0xFF)); ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom) + 1, (uint8_t) (val >> 8)); };
+void ppu_write_vram_two_bytes(PPU *ppu, uint16_t addr, uint16_t val) { ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom), (uint8_t) (val & 0xFF)); ppu_write_vram_byte(ppu, vram_mirror(addr, ppu->nes->rom) + 1, (uint8_t) (val >> 8)); }
 
 uint8_t ppu_read_register(PPU *ppu, uint16_t addr) {
     switch (addr) {
@@ -128,46 +130,49 @@ void ppu_write_register(PPU *ppu, uint16_t addr, uint8_t val) {
 void ppu_reset(PPU *ppu) {
 	ppu->scanline_pixel = 0;
 	ppu->scanline_n = 0;
-	ppu->framebuffer.fill(0xff000000);
+	for (size_t i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++)
+		ppu->framebuffer[i] = 0xff000000;
 }
 
 void ppu_init(PPU *ppu, NES *nes)
 {
+	*ppu = (PPU){0};
+	ppu->ignore_ctrl_writes = true;
 	ppu->nes = nes;
 	ppu_reset(ppu);
 }
 
-bool PPU::run(size_t cycles) {
-	scanline_pixel += cycles;
+bool ppu_run(PPU *ppu, size_t cycles) {
+	ppu->scanline_pixel += cycles;
 
-	if (scanline_pixel < 340)
+	if (ppu->scanline_pixel < 340)
 		return false;
 
-	scanline_pixel %= 340;
-	scanline_n++;
+	ppu->scanline_pixel %= 340;
+	ppu->scanline_n++;
 
-	if (scanline_n >= 261) {
-		ignore_ctrl_writes = false;
-		scanline_n = 0;
-		PPUSTATUS_SET_VBLANK(ppu_status, false);
+	if (ppu->scanline_n >= 261) {
+		ppu->ignore_ctrl_writes = false;
+		ppu->scanline_n = 0;
+		PPUSTATUS_SET_VBLANK(ppu->ppu_status, false);
 	}
 	
 
-	if (scanline_n == 241) {
-		scanline_n++;
-		PPUSTATUS_SET_VBLANK(ppu_status, true);
-		if (PPUCTRL_VBLANK_ENABLE(ppu_ctrl)) {
-			nes->nmi = true;
+	if (ppu->scanline_n == 241) {
+		ppu->scanline_n++;
+		PPUSTATUS_SET_VBLANK(ppu->ppu_status, true);
+		if (PPUCTRL_VBLANK_ENABLE(ppu->ppu_ctrl)) {
+			ppu->nes->nmi = true;
 		}
 
 		for (int i = 0; i < 30; i++) {
 			for (int j = 0; j < 32; j++) {
-				draw_tile(i * 32 + j, j * 8, i * 8);
+				ppu_draw_tile(ppu, i * 32 + j, j * 8, i * 8);
 			}
 		}
 
 		for (int i = 0; i < 64; i++)
-			draw_sprite(i);
+			ppu_draw_sprite(ppu, i);
 
 		return true;
 	}
@@ -205,18 +210,18 @@ uint16_t nt_base[]	= {0x2000, 0x2400, 0x2800, 0x2c00};
 uint16_t at_base[]	= {0x23c0, 0x27c0, 0x2bc0, 0x2fc0};
 uint16_t pt_base[]	= {0x0, 0x1000};
 
-#define ATTR_TB_BYTE_TOP_LEFT(attr_tb_byte)			((attr_tb_byte) & 0b11)
-#define ATTR_TB_BYTE_TOP_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0b1100) >> 2)
-#define ATTR_TB_BYTE_BOTTOM_LEFT(attr_tb_byte)		(((attr_tb_byte) & 0b110000) >> 4)
-#define ATTR_TB_BYTE_BOTTOM_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0b11000000) >> 6)
+#define ATTR_TB_BYTE_TOP_LEFT(attr_tb_byte)			((attr_tb_byte) & 0x3)
+#define ATTR_TB_BYTE_TOP_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0xc) >> 2)
+#define ATTR_TB_BYTE_BOTTOM_LEFT(attr_tb_byte)		(((attr_tb_byte) & 0x30) >> 4)
+#define ATTR_TB_BYTE_BOTTOM_RIGHT(attr_tb_byte)		(((attr_tb_byte) & 0xc0) >> 6)
 
-uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
-	uint16_t at_start = at_base[PPUCTRL_NT(ppu_ctrl)];
+static uint8_t attr_tb_lookup(PPU *ppu, uint32_t tile_n) {
+	uint16_t at_start = at_base[PPUCTRL_NT(ppu->ppu_ctrl)];
 	uint16_t nt_y = tile_n / 32;
 	uint16_t nt_x = tile_n % 32;
 	uint16_t at_idx = (nt_y / 4 )* 8 + nt_x / 4;
 
-	uint8_t at_byte = ppu_read_vram_byte(this, at_start + at_idx);
+	uint8_t at_byte = ppu_read_vram_byte(ppu, at_start + at_idx);
 	if (((nt_x % 4) / 2) == 0) {
 		if (((nt_y % 4) / 2) == 0)
 			return ATTR_TB_BYTE_TOP_LEFT(at_byte);
@@ -229,54 +234,54 @@ uint8_t PPU::attr_tb_lookup(uint32_t tile_n) {
 		return ATTR_TB_BYTE_BOTTOM_RIGHT(at_byte);
 	}
 }
-#define PAL_OFFSET_PIXEL_VAL_SET(offset, val)	{offset = ((offset) & ~0b11) | ((val) & 0b11);}
-#define PAL_OFFSET_PALETTE_SET(offset, val)		{offset = ((offset) & ~0b1100) | (((val) & 0b11) << 2);}
-#define PAL_OFFSET_BG_SPR_SET(offset, val)		{offset = ((offset) & ~0b10000) | (((uint8_t)(val)) << 4);}
+#define PAL_OFFSET_PIXEL_VAL_SET(offset, val)	{offset = ((offset) & ~0x3) | ((val) & 0x3);}
+#define PAL_OFFSET_PALETTE_SET(offset, val)		{offset = ((offset) & ~0xc) | (((val) & 0x3) << 2);}
+#define PAL_OFFSET_BG_SPR_SET(offset, val)		{offset = ((offset) & ~0x10) | (((uint8_t)(val)) << 4);}
 
 
-void PPU::draw_tile(uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
+void ppu_draw_tile(PPU *ppu, uint32_t tile_n, uint32_t base_x, uint32_t base_y) {
 
-	uint16_t pt_tile_offset = ppu_read_vram_byte(this, nt_base[PPUCTRL_NT(ppu_ctrl)] + tile_n) * 16;
+	uint16_t pt_tile_offset = ppu_read_vram_byte(ppu, nt_base[PPUCTRL_NT(ppu->ppu_ctrl)] + tile_n) * 16;
 
-	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(ppu_ctrl)];
+	uint16_t tile_start = pt_tile_offset + pt_base[PPUCTRL_BG_PT(ppu->ppu_ctrl)];
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
-			uint8_t lsb = 0 == (ppu_read_vram_byte(this, tile_start + y) & (0x80 >> x))
+			uint8_t lsb = 0 == (ppu_read_vram_byte(ppu, tile_start + y) & (0x80 >> x))
 						? 0 : 1;
-			uint8_t msb = 0 == (ppu_read_vram_byte(this, tile_start + y + 8) & (0x80 >> x))
+			uint8_t msb = 0 == (ppu_read_vram_byte(ppu, tile_start + y + 8) & (0x80 >> x))
 						? 0 : 1;
 
 			uint8_t offset = 0;
 			PAL_OFFSET_PIXEL_VAL_SET(offset, (uint8_t)(msb << 1 | lsb));
-			PAL_OFFSET_PALETTE_SET(offset, attr_tb_lookup(tile_n));
+			PAL_OFFSET_PALETTE_SET(offset, attr_tb_lookup(ppu, tile_n));
 			PAL_OFFSET_BG_SPR_SET(offset, false);
 
-			uint32_t colour = palette[ppu_read_vram_byte(this, BG_PALETTES_BASE + offset)];
+			uint32_t colour = palette[ppu_read_vram_byte(ppu, BG_PALETTES_BASE + offset)];
 
-			set_pixel(framebuffer.data(), base_x + x, base_y + y, colour);
+			set_pixel(ppu->framebuffer, base_x + x, base_y + y, colour);
 		}
 }
 
-void PPU::draw_sprite(uint8_t sprite_n) {
-	uint8_t base_y = oam[sprite_n * 4];
-	uint16_t tile_idx = oam[sprite_n * 4 + 1];
-	if (PPUCTRL_SPRITE_SZ(ppu_ctrl))
+void ppu_draw_sprite(PPU *ppu, uint8_t sprite_n) {
+	uint8_t base_y = ppu->oam[sprite_n * 4];
+	uint16_t tile_idx = ppu->oam[sprite_n * 4 + 1];
+	if (PPUCTRL_SPRITE_SZ(ppu->ppu_ctrl))
 		printf("Attempted to draw 8x16 sprite. This is unimplemented!\n");
-	uint16_t attr = oam[sprite_n * 4 + 2];
-	uint8_t base_x = oam[sprite_n * 4 + 3];
+	uint16_t attr = ppu->oam[sprite_n * 4 + 2];
+	uint8_t base_x = ppu->oam[sprite_n * 4 + 3];
 
-	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(ppu_ctrl)];
-	bool flip_hrz = (attr & 0b01000000) != 0;
-	bool flip_vrt = (attr & 0b10000000) != 0;
+	uint16_t tile_start = 16 * tile_idx + pt_base[PPUCTRL_SPRITE_PT(ppu->ppu_ctrl)];
+	bool flip_hrz = (attr & 0x40) != 0;
+	bool flip_vrt = (attr & 0x80) != 0;
 
-	uint16_t palette_base = SPR_PALETTES_BASE + (attr & 0b11) * 4;
+	uint16_t palette_base = SPR_PALETTES_BASE + (attr & 0x3) * 4;
 
 	for (int x = 0; x < 8; x++)
 		for (int y = 0; y < 8; y++) {
-			uint8_t lsb = 0 == (ppu_read_vram_byte(this, tile_start + y) & (0x80 >> x))
+			uint8_t lsb = 0 == (ppu_read_vram_byte(ppu, tile_start + y) & (0x80 >> x))
 						? 0 : 1;
-			uint8_t msb = 0 == (ppu_read_vram_byte(this, tile_start + y + 8) & (0x80 >> x))
+			uint8_t msb = 0 == (ppu_read_vram_byte(ppu, tile_start + y + 8) & (0x80 >> x))
 						? 0 : 1;
 
 			uint16_t palette_offset = (msb << 1) | lsb;
@@ -284,7 +289,7 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 			if (!palette_offset)
 				continue;
 			
-			uint32_t colour = palette[ppu_read_vram_byte(this, palette_base + palette_offset)];
+			uint32_t colour = palette[ppu_read_vram_byte(ppu, palette_base + palette_offset)];
 
 			uint32_t pix_x = flip_hrz ? base_x + 7 - x : base_x + x;
 			uint32_t pix_y = flip_vrt ? base_y + 7 - y : base_y + y;
@@ -292,7 +297,7 @@ void PPU::draw_sprite(uint8_t sprite_n) {
 			if (pix_x >= 256 || pix_y >= 240)
 				continue;
 				
-			set_pixel(framebuffer.data(), pix_x, pix_y, colour);
+			set_pixel(ppu->framebuffer, pix_x, pix_y, colour);
 		}
 
 }

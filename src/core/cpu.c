@@ -1,6 +1,9 @@
 #include "cpu.h"
 #include "nes.h"
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define STACK_BASE 0x100
 
@@ -33,14 +36,14 @@ static uint16_t ram_mirror(uint16_t addr) {
     return addr;
 }
 
-#define FLAGS_NEGATIVE_MASK     0b10000000
-#define FLAGS_OVERFLOW_MASK     0b01000000
-#define FLAGS_DECIMAL_MASK      0b00001000
-#define FLAGS_INHIBIT_IRQ_MASK  0b00000100
-#define FLAGS_ZERO_MASK         0b00000010
-#define FLAGS_CARRY_MASK        0b00000001
+#define FLAGS_NEGATIVE_MASK     0x80
+#define FLAGS_OVERFLOW_MASK     0x40
+#define FLAGS_DECIMAL_MASK      0x8
+#define FLAGS_INHIBIT_IRQ_MASK  0x4
+#define FLAGS_ZERO_MASK         0x2
+#define FLAGS_CARRY_MASK        0x1
 
-#define SIGN_BIT_MASK           0b10000000
+#define SIGN_BIT_MASK           0x80
 
 static void set_carry(CPU *cpu, bool condition)
 {
@@ -173,7 +176,7 @@ void cpu_reset(CPU *cpu) {
     cpu->pc = cpu_read_two_bytes(cpu, 0xfffc);
 }
 
-uint16_t get_addr(CPU *cpu, AddressingMode mode) {
+uint16_t get_addr(CPU *cpu, enum AddressingMode mode) {
 	switch (mode) {
 		uint16_t tmp_u16;
 
@@ -217,7 +220,7 @@ uint16_t get_addr(CPU *cpu, AddressingMode mode) {
 	}
 }
 
-bool adc(CPU *cpu, AddressingMode addr_mode) {
+bool adc(CPU *cpu, enum AddressingMode addr_mode) {
 	const uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     const uint8_t carry = (cpu->flags & FLAGS_CARRY_MASK) != 0;
 	const uint16_t result = cpu->accum + operand + carry;
@@ -238,7 +241,7 @@ bool adc(CPU *cpu, AddressingMode addr_mode) {
     return false;
 }
 
-bool and_(CPU *cpu, AddressingMode addr_mode) {
+bool and_(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->accum &= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
 
     set_zero(cpu, cpu->accum == 0);
@@ -247,7 +250,7 @@ bool and_(CPU *cpu, AddressingMode addr_mode) {
     return false;
 }
 
-void asl(CPU *cpu, AddressingMode addr_mode){
+void asl(CPU *cpu, enum AddressingMode addr_mode){
 	if (addr_mode == ACCUMULATOR) {
 	    set_carry(cpu, cpu->accum & SIGN_BIT_MASK);
 
@@ -293,14 +296,14 @@ void beq(CPU *cpu) {
 		cpu->pc += offset;
 }
 
-void bit(CPU *cpu, AddressingMode addr_mode) {
+void bit(CPU *cpu, enum AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
 
     set_zero(cpu, (cpu->accum & operand) == 0);
 
-    set_overflow(cpu, operand & 0b01000000);
+    set_overflow(cpu, operand & 0x40);
 
-    set_negative(cpu, operand & 0b10000000);
+    set_negative(cpu, operand & 0x80);
 }
 
 void bmi(CPU *cpu) {
@@ -364,30 +367,30 @@ void clv(CPU *cpu) {
     cpu->flags &= ~FLAGS_OVERFLOW_MASK;
 }
 
-void cmp(CPU *cpu, AddressingMode addr_mode) {
+void cmp(CPU *cpu, enum AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_carry(cpu, cpu->accum >= operand);
-	auto result = (int8_t) (cpu->accum - operand);
+	int8_t result = (int8_t) (cpu->accum - operand);
 
     set_zero(cpu, result == 0);
 
     set_negative(cpu, result < 0);
 }
 
-void cpx(CPU *cpu, AddressingMode addr_mode) {
+void cpx(CPU *cpu, enum AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_carry(cpu, cpu->reg_x >= operand);
-	auto result = (int8_t) (cpu->reg_x - operand);
+	int8_t result = (int8_t) (cpu->reg_x - operand);
 
     set_zero(cpu, result == 0);
 
     set_negative(cpu, result < 0);
 }
 
-void cpy(CPU *cpu, AddressingMode addr_mode) {
+void cpy(CPU *cpu, enum AddressingMode addr_mode) {
 	uint8_t operand = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_carry(cpu, cpu->reg_y >= operand);
-	auto result = (int8_t) (cpu->reg_y - operand);
+	int8_t result = (int8_t) (cpu->reg_y - operand);
 
     set_zero(cpu, result == 0);
 
@@ -395,7 +398,7 @@ void cpy(CPU *cpu, AddressingMode addr_mode) {
 
 }
 
-void dec(CPU *cpu, AddressingMode addr_mode) {
+void dec(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr) - 1;
 
@@ -420,14 +423,14 @@ void dey(CPU *cpu) {
     set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
-void eor(CPU *cpu, AddressingMode addr_mode) {
+void eor(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->accum ^= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_zero(cpu, cpu->accum == 0);
 
     set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
-void inc(CPU *cpu, AddressingMode addr_mode) {
+void inc(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	uint8_t tmp = cpu_read_byte(cpu, addr) + 1;
     set_zero(cpu, tmp == 0);
@@ -449,7 +452,7 @@ void iny(CPU *cpu) {
     set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
-void jmp(CPU *cpu, AddressingMode addr_mode) {
+void jmp(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
     if (addr_mode == INDIRECT && (addr & 0xff) == 0xff) {
         /* CPU quirk in nes version of 6502
@@ -468,27 +471,27 @@ void jsr(CPU *cpu) {
 	cpu->pc = addr;
 }
 
-void lda(CPU *cpu, AddressingMode addr_mode) {
+void lda(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->accum = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_zero(cpu, cpu->accum == 0);
 
     set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
 }
 
-void ldx(CPU *cpu, AddressingMode addr_mode) {
+void ldx(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->reg_x = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_zero(cpu, cpu->reg_x == 0);
 
     set_negative(cpu, cpu->reg_x & SIGN_BIT_MASK);
 }
 
-void ldy(CPU *cpu, AddressingMode addr_mode) {
+void ldy(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->reg_y = cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_zero(cpu, cpu->reg_y == 0);
     set_negative(cpu, cpu->reg_y & SIGN_BIT_MASK);
 }
 
-void lsr(CPU *cpu, AddressingMode addr_mode) {
+void lsr(CPU *cpu, enum AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
         set_carry(cpu, cpu->accum & 0x1);
 		cpu->accum = cpu->accum >> 1;
@@ -508,7 +511,7 @@ void lsr(CPU *cpu, AddressingMode addr_mode) {
 	cpu_write_byte(cpu, addr, tmp);
 }
 
-void ora(CPU *cpu, AddressingMode addr_mode) {
+void ora(CPU *cpu, enum AddressingMode addr_mode) {
 	cpu->accum |= cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     set_zero(cpu, cpu->accum == 0);
     set_negative(cpu, cpu->accum & SIGN_BIT_MASK);
@@ -533,7 +536,7 @@ void plp(CPU *cpu) {
 	cpu->flags = 0x20 | (cpu_read_byte(cpu, STACK_BASE + ++cpu->sp) & 0xef);
 }
 
-void rol(CPU *cpu, AddressingMode addr_mode) {
+void rol(CPU *cpu, enum AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
 		uint8_t tmp = (cpu->accum << 1) | (cpu->flags & FLAGS_CARRY_MASK);
         set_carry(cpu, cpu->accum & 0x80);
@@ -546,7 +549,7 @@ void rol(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t tmp = cpu_read_byte(cpu, addr);
 	uint8_t tmp_ = (tmp << 1) | (cpu->flags & FLAGS_CARRY_MASK);
 
-    set_carry(cpu, tmp & 0b10000000);
+    set_carry(cpu, tmp & 0x80);
 
     set_zero(cpu, tmp_ == 0);
 
@@ -555,11 +558,11 @@ void rol(CPU *cpu, AddressingMode addr_mode) {
     cpu_write_byte(cpu, addr, tmp_);
 }
 
-void ror(CPU *cpu, AddressingMode addr_mode) {
+void ror(CPU *cpu, enum AddressingMode addr_mode) {
 	if (addr_mode == ACCUMULATOR) {
 		uint8_t tmp = (cpu->accum >> 1) | ((uint8_t) (cpu->flags & FLAGS_CARRY_MASK) << 7);
 
-	    set_carry(cpu, cpu->accum & 0b1);
+	    set_carry(cpu, cpu->accum & 0x1);
 
 	    cpu->accum = tmp;
 
@@ -572,7 +575,7 @@ void ror(CPU *cpu, AddressingMode addr_mode) {
 	uint8_t tmp = cpu_read_byte(cpu, addr);
 	uint8_t tmp_ = (tmp >> 1) | ((uint8_t) (cpu->flags & FLAGS_CARRY_MASK) << 7);
 
-    set_carry(cpu, tmp & 0b1);
+    set_carry(cpu, tmp & 0x1);
 
     set_zero(cpu, tmp_ == 0);
 
@@ -594,7 +597,7 @@ void rts(CPU *cpu) {
     cpu->pc = ((((uint16_t) pch) << 8) | pcl) + 1;
 }
 
-void sbc(CPU *cpu, AddressingMode addr_mode) {
+void sbc(CPU *cpu, enum AddressingMode addr_mode) {
 	const uint8_t operand = ~cpu_read_byte(cpu, get_addr(cpu, addr_mode));
     const uint8_t carry = (cpu->flags & FLAGS_CARRY_MASK) != 0;
 	const uint16_t result = cpu->accum + operand + carry;
@@ -625,17 +628,17 @@ void sei(CPU *cpu) {
     cpu-> flags |= FLAGS_INHIBIT_IRQ_MASK;
 }
 
-void sta(CPU *cpu, AddressingMode addr_mode) {
+void sta(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	cpu_write_byte(cpu, addr, cpu->accum);
 }
 
-void stx(CPU *cpu, AddressingMode addr_mode) {
+void stx(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	cpu_write_byte(cpu, addr, cpu->reg_x);
 }
 
-void sty(CPU *cpu, AddressingMode addr_mode) {
+void sty(CPU *cpu, enum AddressingMode addr_mode) {
 	uint16_t addr = get_addr(cpu, addr_mode);
 	cpu_write_byte(cpu, addr, cpu->reg_y);
 }

@@ -2,6 +2,11 @@
 
 A simple NES emulator written in C.
 
+Able to run games like Donkey Kong and Balloon Fight.
+
+### Note
+This is a learning project, and therefore developed almost entirely without AI assistance (only used for code review and speeding up repetitive edits).
+
 ## Building
 
 ### MacOS / Linux
@@ -25,5 +30,5 @@ Open ``build/dinesaur.sln`` in Visual Studio and build target ``dinesaur``.
 - [ ] Accurate CPU cycle timing (page cross penalties etc)
 - [ ] Mappers other than 0
 - [ ] APU emulation
-- [ ] PPU testing for accuracy
+- [ ] PPU testsuite
 - [ ] PPU scrolling
